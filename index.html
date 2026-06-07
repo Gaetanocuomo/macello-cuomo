@@ -2522,11 +2522,9 @@ var qrcode = function() {
   .scrollnav button:hover{background:var(--oxblood-dk)}
 
   /* ---- Tabella dati MOD 4 ---- */
-  .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-color:#b9a98c #efe7d8;scrollbar-width:auto}
-  .dt-wrap::-webkit-scrollbar{height:15px;width:15px}
-  .dt-wrap::-webkit-scrollbar-track{background:#efe7d8}
-  .dt-wrap::-webkit-scrollbar-thumb{background:#b9a98c;border-radius:8px;border:3px solid #efe7d8}
-  .dt-wrap::-webkit-scrollbar-thumb:hover{background:#8a7f6e}
+  .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm)}
+  .dt-topscroll{overflow-x:scroll;overflow-y:hidden;margin-bottom:6px;border:1px solid var(--line);border-radius:8px;background:var(--paper-2)}
+  .dt-topscroll-inner{height:1px}
   .dt{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
   .dt th{position:sticky;top:0;z-index:2;background:#2a2320;color:#f3ebe0;font-family:'IBM Plex Mono',monospace;font-size:10px;
     letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:11px 13px;text-align:left;cursor:pointer;user-select:none;white-space:nowrap}
@@ -2993,7 +2991,7 @@ var qrcode = function() {
             <button class="btn-ghost" onclick="azzeraFiltri()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera filtri</button>
           </div>
           <p id="archConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 6px"></p>
-          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne: usa i <b>pulsanti ◀ ▶ "Scorri la tabella"</b> qui sotto (o Shift + rotellina del mouse) per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note.</p>
+          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne: usa la <b>barra di scorrimento</b> sopra la tabella oppure i <b>pulsanti ◀ ▶</b> (o Shift + rotellina del mouse) per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note.</p>
           <div id="archivioLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
         </fieldset>
       </div>
@@ -3335,9 +3333,15 @@ var qrcode = function() {
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
       return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
     }).join('');
-    box.innerHTML=bulk+'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollArch(-1)">◀</button><button type="button" title="Verso destra" onclick="scrollArch(1)">▶</button></div><div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+    box.innerHTML=bulk+'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollArch(-1)">◀</button><button type="button" title="Verso destra" onclick="scrollArch(1)">▶</button></div><div class="dt-topscroll" id="archTopScroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap" id="archWrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+    const ts=$('archTopScroll'), tsi=ts.firstElementChild, wrap=$('archWrap'), tbl=wrap.querySelector('table');
+    const sync=()=>{ tsi.style.width=Math.max(wrap.scrollWidth, tbl.scrollWidth)+'px'; };
+    sync(); requestAnimationFrame(sync); setTimeout(sync,200); setTimeout(sync,500);
+    let lock=false;
+    ts.onscroll=()=>{ if(lock)return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; };
+    wrap.onscroll=()=>{ if(lock)return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; };
   }
-  function scrollArch(dir){ const w=document.querySelector('#archivioLista .dt-wrap'); if(w) w.scrollBy({left:dir*Math.max(320,w.clientWidth*0.75),behavior:'smooth'}); }
+  function scrollArch(dir){ const w=$('archWrap'), t=$('archTopScroll'); if(!w) return; const amt=Math.max(300, Math.round(w.clientWidth*0.7)); w.scrollLeft += dir*amt; if(t) t.scrollLeft=w.scrollLeft; }
   function aggiornaArchBulk(){
     const bar=$('archBulk'); if(bar) bar.style.display=archSel.size?'flex':'none';
     const c=$('archSelCnt'); if(c) c.textContent=archSel.size+' selezionati';
