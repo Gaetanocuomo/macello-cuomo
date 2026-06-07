@@ -2515,7 +2515,11 @@ var qrcode = function() {
   .filterbar input,.filterbar select{padding:8px 11px;font-size:13px;min-width:130px}
 
   /* ---- Tabella dati MOD 4 ---- */
-  .dt-wrap{max-height:68vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm)}
+  .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-color:#b9a98c #efe7d8;scrollbar-width:auto}
+  .dt-wrap::-webkit-scrollbar{height:15px;width:15px}
+  .dt-wrap::-webkit-scrollbar-track{background:#efe7d8}
+  .dt-wrap::-webkit-scrollbar-thumb{background:#b9a98c;border-radius:8px;border:3px solid #efe7d8}
+  .dt-wrap::-webkit-scrollbar-thumb:hover{background:#8a7f6e}
   .dt{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
   .dt th{position:sticky;top:0;z-index:2;background:#2a2320;color:#f3ebe0;font-family:'IBM Plex Mono',monospace;font-size:10px;
     letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:11px 13px;text-align:left;cursor:pointer;user-select:none;white-space:nowrap}
@@ -2939,7 +2943,8 @@ var qrcode = function() {
             <div class="fc"><span class="fc-lab">al</span><input type="date" id="arch_al" onchange="renderArchivio()"></div>
             <button class="btn-ghost" onclick="azzeraFiltri()" style="padding:9px 16px">Azzera filtri</button>
           </div>
-          <p id="archConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 12px"></p>
+          <p id="archConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 6px"></p>
+          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne: <b>trascina la barra di scorrimento in basso</b> (o usa Shift + rotellina del mouse) per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note.</p>
           <div id="archivioLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
         </fieldset>
       </div>
@@ -3270,18 +3275,34 @@ var qrcode = function() {
   async function caricaPdfMulti(ev){
     const files=[...ev.target.files]; if(!files.length) return;
     const norm=s=>String(s||'').replace(/\.pdf$/i,'').trim().toUpperCase();
+    // aggiorno l'archivio dal cloud così riconosco i MOD 4 già salvati
+    if(sb){ try{ await caricaArchivio(); }catch(e){} }
     const inLista=new Set(batch.map(e=>norm(e._file)));
     const inArchivio=new Set(archivioCache.map(c=>norm(c.doc_accompagnamento)).filter(Boolean));
-    const dup=[], nuovi=[];
-    files.forEach(f=>{ const k=norm(f.name); (inLista.has(k)||inArchivio.has(k)) ? dup.push(f) : nuovi.push(f); });
+    const visti=new Set();
+    const dLista=[], dArch=[], dSel=[], nuovi=[];
+    files.forEach(f=>{ const k=norm(f.name);
+      if(visti.has(k)){ dSel.push(f); return; } visti.add(k);
+      if(inLista.has(k)) dLista.push(f);
+      else if(inArchivio.has(k)) dArch.push(f);
+      else nuovi.push(f);
+    });
+    const dupTot=dLista.length+dArch.length+dSel.length;
 
     let daCaricare=nuovi.slice(), inclusi=false;
-    if(dup.length){
-      const elenco=dup.map(f=>'• '+f.name).join('\n');
-      const ok=confirm('CONTROLLO DUPLICATI\n\n'+dup.length+' MOD 4 risultano GIÀ caricati in lista o già presenti in archivio:\n\n'+elenco+'\n\nVuoi caricarli lo stesso?\n\n• OK = carica anche questi (crei dei doppioni)\n• Annulla = salta i doppioni e carica solo i nuovi');
-      if(ok){ daCaricare=daCaricare.concat(dup); inclusi=true; }
+    if(dupTot){
+      const blocchi=[];
+      if(dArch.length)  blocchi.push('GIÀ IN ARCHIVIO ('+dArch.length+'):\n'+dArch.map(f=>'   • '+f.name).join('\n'));
+      if(dLista.length) blocchi.push('GIÀ NELLA LISTA ('+dLista.length+'):\n'+dLista.map(f=>'   • '+f.name).join('\n'));
+      if(dSel.length)   blocchi.push('SELEZIONATI DUE VOLTE ('+dSel.length+'):\n'+dSel.map(f=>'   • '+f.name).join('\n'));
+      const ok=confirm('⚠️  MOD 4 GIÀ ESISTENTI\n\nIl sistema ha riconosciuto '+dupTot+' MOD 4 già presenti (controllo sul numero del MOD 4 = nome del file):\n\n'+blocchi.join('\n\n')+'\n\nVuoi caricarli lo stesso?\n\n•  OK  = carica comunque (verranno creati dei doppioni)\n•  Annulla  = salta i doppioni e carica solo i MOD 4 nuovi');
+      if(ok){ daCaricare=daCaricare.concat(dLista, dArch); inclusi=true; }
     }
-    if(!daCaricare.length){ ev.target.value=''; lottoBanner('Nessun nuovo MOD 4 caricato: erano tutti già presenti.', true); return; }
+    if(!daCaricare.length){
+      ev.target.value='';
+      lottoBanner('⚠️ Nessun MOD 4 caricato: erano <b>tutti già presenti</b> (in archivio o in lista). Caricamento annullato.', true);
+      return;
+    }
 
     lottoBanner('Lettura di '+daCaricare.length+' file in corso…');
     let agg=0, err=0;
@@ -3291,8 +3312,10 @@ var qrcode = function() {
       catch(e){ err++; }
     }
     ev.target.value=''; renderBatch();
-    const extra=[]; if(dup.length){ extra.push(inclusi?(dup.length+' doppioni inclusi'):(dup.length+' doppioni saltati')); } if(err) extra.push(err+' non leggibili');
-    lottoBanner('✓ Aggiunti <b>'+agg+'</b> capi da '+daCaricare.length+' file'+(extra.length?(' · '+extra.join(' · ')):'')+'.');
+    const extra=[];
+    if(dupTot){ extra.push(inclusi?('<b>'+dupTot+' doppioni inclusi</b>'):('<b>'+dupTot+' doppioni già esistenti SALTATI</b>')); }
+    if(err) extra.push(err+' file non leggibili');
+    lottoBanner((dupTot&&!inclusi?'⚠️ ':'✓ ')+'Aggiunti <b>'+agg+'</b> capi da '+daCaricare.length+' file'+(extra.length?(' · '+extra.join(' · ')):'')+'.', dupTot&&!inclusi);
   }
   function lf(i,key,label,type){
     return `<label style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px">${label}<input type="${type||'text'}" value="${esc(batch[i][key]||'')}" onchange="batchEdit(${i},'${key}',this.value)" style="padding:7px 9px;border:1.5px solid var(--line-strong);border-radius:3px;font-size:13px;font-family:inherit;background:var(--paper)"></label>`;
