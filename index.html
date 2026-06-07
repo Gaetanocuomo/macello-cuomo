@@ -2549,6 +2549,8 @@ var qrcode = function() {
   .btn-del{color:#c0392b!important;border-color:#e3c2bd!important}
   .btn-del:hover{background:#fbecea!important;border-color:#c0392b!important}
   .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}
+  .editgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+  @media(max-width:560px){.editgrid{grid-template-columns:1fr}}
   .drow{display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding-bottom:7px}
   .dk{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
   .dv{font-size:14px;color:var(--ink);word-break:break-word}
@@ -3397,7 +3399,7 @@ var qrcode = function() {
     const rows=list.map(c=>{ const i=archivioCache.indexOf(c);
       const tds=ARCH_COLS_VIS.map(col=>{ let attr=''; if(ARCH_MONO.has(col.k)) attr=' class="mono"'; if(col.k==='marca_auricolare') attr=' class="mono" style="font-weight:600"'; if(col.k==='allevamento') attr=' class="allev"';
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
-      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-ghost mini iconbtn" title="Dettagli — vedi tutti i dati" onclick="dettagliCapo(\''+c.id+'\')">🔍</button><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini iconbtn btn-del" title="Elimina" onclick="eliminaCapo(\''+c.id+'\')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button></div></td></tr>';
+      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-ghost mini iconbtn" title="Dettagli — vedi tutti i dati" onclick="dettagliCapo(\''+c.id+'\')">🔍</button><button class="btn-ghost mini iconbtn" title="Modifica tutti i campi" onclick="modificaCapo(\''+c.id+'\')">✏️</button><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini iconbtn btn-del" title="Elimina" onclick="eliminaCapo(\''+c.id+'\')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button></div></td></tr>';
     }).join('');
     box.innerHTML=bulk+'<div class="dt-wrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
   }
@@ -3422,9 +3424,52 @@ var qrcode = function() {
       m.addEventListener('click',e=>{ if(e.target===m) chiudiModalCapo(); });
       document.body.appendChild(m);
     }
-    m.innerHTML='<div class="modal-card"><div class="modal-h"><span>Scheda capo</span><span class="modal-x" onclick="chiudiModalCapo()">×</span></div><div class="modal-b">'+body+'</div><div class="modal-f"><button class="btn-primary" id="btnEtichettaCapo">🖨️ Genera / stampa etichetta</button><button class="btn-ghost" onclick="chiudiModalCapo()">Chiudi</button></div></div>';
+    m.innerHTML='<div class="modal-card"><div class="modal-h"><span>Scheda capo</span><span class="modal-x" onclick="chiudiModalCapo()">×</span></div><div class="modal-b">'+body+'</div><div class="modal-f"><button class="btn-primary" id="btnEtichettaCapo">🖨️ Genera / stampa etichetta</button><button class="btn-ghost" id="btnModCapo">✏️ Modifica</button><button class="btn-ghost" onclick="chiudiModalCapo()">Chiudi</button></div></div>';
     m.querySelector('#btnEtichettaCapo').onclick=()=>{ chiudiModalCapo(); etichettaArchivio(i); };
+    m.querySelector('#btnModCapo').onclick=()=>{ chiudiModalCapo(); modificaCapo(c.id); };
     m.style.display='flex';
+  }
+  let _capoEditId=null;
+  function chiudiCapoEdit(){ const m=document.getElementById('capoEditModal'); if(m) m.style.display='none'; }
+  function modificaCapo(id){
+    const c=archivioCache.find(x=>x.id===id); if(!c) return;
+    _capoEditId=id;
+    const sx=(v,arr)=>'<option value=""></option>'+arr.map(o=>'<option'+(v===o?' selected':'')+'>'+o+'</option>').join('');
+    const cliOpts='<option value="">— nessuno —</option>'+clientiCache.map(cl=>'<option value="'+cl.id+'"'+(c.cliente_id===cl.id?' selected':'')+'>'+esc(cl.nome)+'</option>').join('');
+    const T=(id,lab,val,full)=>'<div class="field'+(full?' full':'')+'"><label>'+lab+'</label><input id="'+id+'" value="'+esc(val||'')+'"></div>';
+    const D=(id,lab,val)=>'<div class="field"><label>'+lab+'</label><input type="date" id="'+id+'" value="'+esc(val||'')+'"></div>';
+    const body='<div class="editgrid">'
+      +T('e_marca','Marca auricolare',c.marca_auricolare)+T('e_codel','Codice elettronico',c.codice_elettronico)
+      +T('e_specie','Specie',c.specie)+T('e_razza','Razza',c.razza)
+      +'<div class="field"><label>Sesso</label><select id="e_sesso">'+sx(c.sesso,['Maschio','Femmina'])+'</select></div>'
+      +D('e_nascita','Data di nascita',c.data_nascita)+T('e_paese','Paese di nascita',c.paese_nascita)
+      +T('e_allev','Allevamento',c.allevamento,true)+T('e_stalla','Codice stalla',c.codice_stalla)
+      +T('e_asl','ASL',c.asl)+T('e_stato','Stato sanitario',c.stato_sanitario,true)
+      +T('e_doc','Doc. MOD 4',c.doc_accompagnamento)+T('e_macello','Macello CE',c.macello)
+      +D('e_datamac','Data macellazione',c.data_macellazione)+T('e_peso','Peso',c.peso)+T('e_lotto','Lotto',c.lotto)
+      +'<div class="field full"><label>Cliente</label><select id="e_cliente">'+cliOpts+'</select></div>'
+      +'<div class="field full"><label>Note</label><textarea id="e_note">'+esc(c.note||'')+'</textarea></div>'
+      +'</div><div class="banner" id="capoEditBanner" style="display:none"></div>';
+    let m=document.getElementById('capoEditModal');
+    if(!m){ m=document.createElement('div'); m.id='capoEditModal'; m.className='modal'; m.style.display='none';
+      m.addEventListener('click',e=>{ if(e.target===m) chiudiCapoEdit(); }); document.body.appendChild(m); }
+    m.innerHTML='<div class="modal-card"><div class="modal-h"><span>Modifica capo</span><span class="modal-x" onclick="chiudiCapoEdit()">×</span></div><div class="modal-b">'+body+'</div><div class="modal-f"><button class="btn-primary" onclick="salvaCapoEdit()">Salva modifiche</button><button class="btn-ghost" onclick="chiudiCapoEdit()">Annulla</button></div></div>';
+    m.style.display='flex';
+  }
+  async function salvaCapoEdit(){
+    if(!_capoEditId || !sb) return;
+    const v=id=>{ const e=document.getElementById(id); return e?e.value.trim():''; };
+    const rec={ marca_auricolare:v('e_marca'), codice_elettronico:v('e_codel'), specie:v('e_specie'), razza:v('e_razza'),
+      sesso:v('e_sesso'), data_nascita:v('e_nascita')||null, paese_nascita:v('e_paese'), allevamento:v('e_allev'),
+      codice_stalla:v('e_stalla'), asl:v('e_asl'), stato_sanitario:v('e_stato'), doc_accompagnamento:v('e_doc'),
+      macello:v('e_macello'), data_macellazione:v('e_datamac')||null, peso:v('e_peso'), lotto:v('e_lotto'),
+      cliente_id:v('e_cliente')||null, note:v('e_note') };
+    const ban=document.getElementById('capoEditBanner');
+    try{
+      const {error}=await sb.from('capi').update(rec).eq('id',_capoEditId);
+      if(error) throw error;
+      await caricaArchivio(); chiudiCapoEdit();
+    }catch(e){ if(ban){ ban.style.display='block'; ban.className='banner err'; ban.textContent='Errore nel salvataggio: '+(e.message||e); } }
   }
   function chiudiModalDett(){ const m=document.getElementById('dettModal'); if(m) m.style.display='none'; }
   function dettagliCliente(id){
