@@ -2471,7 +2471,8 @@ var qrcode = function() {
 
   <header class="masthead">
     <div class="brand">
-      <div class="stamp">IT<br>BOLLO<br>CE</div>
+      <img id="headerLogo" alt="Logo attività" style="display:none;max-height:62px;max-width:150px;object-fit:contain">
+      <div class="stamp" id="headerStamp">IT<br>BOLLO<br>CE</div>
       <div>
         <h1>Scheda Anagrafica · QR</h1>
         <p>Da MOD 4 al QR code in un click · tracciabilità dei capi</p>
@@ -2828,6 +2829,8 @@ var qrcode = function() {
     const p=$('logoPreview'), e=$('logoEmpty'), rm=$('logoRemove');
     if(settings.logo){ p.src=settings.logo; p.style.display='block'; e.style.display='none'; rm.style.display='inline-flex'; }
     else { p.style.display='none'; e.style.display='block'; rm.style.display='none'; }
+    const hl=$('headerLogo'), hs=$('headerStamp');
+    if(hl&&hs){ if(settings.logo){ hl.src=settings.logo; hl.style.display='block'; hs.style.display='none'; } else { hl.style.display='none'; hs.style.display=''; } }
   }
   function popolaFormAttivita(){
     $('s_nome').value=settings.nome||''; $('s_indirizzo').value=settings.indirizzo||'';
