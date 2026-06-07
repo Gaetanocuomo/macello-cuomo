@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /**
  * @licstart The following is the entire license notice for the
@@ -2484,6 +2486,7 @@ var qrcode = function() {
 
   <nav class="tabs">
     <button class="tab active" id="tab-gen" onclick="vista('gen')">Generatore QR</button>
+    <button class="tab" id="tab-lotto" onclick="vista('lotto')">Lotto QR</button>
     <button class="tab" id="tab-archivio" onclick="vista('archivio')">Archivio capi</button>
     <button class="tab" id="tab-clienti" onclick="vista('clienti')">Clienti</button>
     <button class="tab" id="tab-set" onclick="vista('set')">La mia attività</button>
@@ -2760,6 +2763,29 @@ var qrcode = function() {
         <div id="archivioLista" style="display:flex;flex-direction:column;gap:10px"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
       </div>
     </section>
+  <div id="view-lotto" style="display:none">
+    <section class="panel">
+      <div class="panel-h"><span class="dot"></span><h2>Lotto QR · più MOD 4 insieme</h2></div>
+      <div class="panel-b">
+        <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px">Carica uno o più PDF MOD 4: l'app estrae tutti i capi in una lista. Correggi e completa i dati mancanti (data macellazione, peso, lotto, cliente…), seleziona quelli da stampare e scaricali tutti insieme come immagini (ZIP) o come unico PDF.</p>
+        <div class="actions" style="flex-wrap:wrap;gap:10px">
+          <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center">📂 Carica PDF (uno o più)
+            <input type="file" id="lottoInput" accept="application/pdf,.pdf" multiple style="display:none" onchange="caricaPdfMulti(event)">
+          </label>
+          <button class="btn-ghost" onclick="selezTutti(true)">Seleziona tutti</button>
+          <button class="btn-ghost" onclick="selezTutti(false)">Deseleziona tutti</button>
+          <button class="btn-ghost" onclick="svuotaLotto()">Svuota lista</button>
+        </div>
+        <div class="banner" id="lottoBanner" style="display:none"></div>
+        <p id="lottoConteggio" style="font-size:13px;color:var(--ink-soft);margin:14px 0 6px;font-weight:600"></p>
+        <div id="lottoLista" style="display:flex;flex-direction:column;gap:14px"></div>
+        <div class="actions" id="lottoExport" style="display:none;flex-wrap:wrap;gap:10px;margin-top:22px;border-top:2px solid var(--line-strong);padding-top:20px">
+          <button class="btn-primary" onclick="stampaSelezionati()" style="box-shadow:4px 4px 0 var(--ink)">🖨️ Stampa selezionati</button>
+          <button class="btn-ghost" onclick="scaricaZip()">🗜️ Scarica ZIP (immagini)</button>
+          <button class="btn-ghost" onclick="scaricaPdf()">📄 Scarica PDF unico</button>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 <div id="printArea"></div>
@@ -2780,9 +2806,10 @@ var qrcode = function() {
 
   /* ---------------- Pagine / navigazione ---------------- */
   function vista(v){
-    ['gen','archivio','set','clienti'].forEach(x=>{ const el=$('view-'+x); if(el) el.style.display=(x===v?'block':'none'); const t=$('tab-'+x); if(t) t.classList.toggle('active', x===v); });
+    ['gen','lotto','archivio','set','clienti'].forEach(x=>{ const el=$('view-'+x); if(el) el.style.display=(x===v?'block':'none'); const t=$('tab-'+x); if(t) t.classList.toggle('active', x===v); });
     if(v==='clienti') caricaClienti();
     if(v==='archivio') caricaArchivio();
+    if(v==='lotto'){ caricaClienti(); renderBatch(); }
     window.scrollTo(0,0);
   }
 
@@ -2954,6 +2981,143 @@ var qrcode = function() {
   function etichettaArchivio(i){
     const c=archivioCache[i]; if(!c) return;
     fillFormFromCapo(c); vista('gen'); genera(); apriEsportazione(false);
+  }
+
+  /* ---------------- Lotto QR (più MOD 4) ---------------- */
+  let batch=[];
+  function lottoBanner(html, err){ const b=$('lottoBanner'); b.innerHTML=html; b.className='banner'+(err?' err':''); b.style.display='block'; }
+  function sanitaNome(s){ return String(s||'capo').replace(/[^\w\-]+/g,'_'); }
+  function scarica(blob, nome){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500); }
+
+  function testoACapi(txt){
+    const find=(re,g=1)=>{ const m=txt.match(re); return m?m[g].trim():''; };
+    const dc={
+      doc:(txt.match(/IT\d{3}[A-Z]{2}\d{12,}/)||[''])[0],
+      stalla:find(/Codice Aziendale:\s*(\d{3}[A-Z]{2}\d{3})/),
+      asl:find(/presso la (?:A\.?S\.?L\.?)\s+([A-ZÀ-ÿ][A-Za-zÀ-ÿ' ]+?)\s*\./),
+      propriet:find(/PROPRIETARIO:\s*([^\n]+?)\s*(?:CODICE|$)/),
+      macello:find(/Codice:\s*(\S+)\s*Approval/)
+    };
+    const mC=txt.match(/Cap:\s*\d{5}\s*Comune di ([^()\n]+?)\s*\(([A-Z]{2})\)/);
+    dc.comune=mC?`${mC[1].trim()} (${mC[2]})`:'';
+    const san=[];
+    [['Tubercolosi','TBC'],['Brucellosi','Brucellosi'],['Leucosi','Leucosi'],['Paratubercolosi','Paratubercolosi']].forEach(([k,lab])=>{
+      const m=txt.match(new RegExp(k+'[\\s\\S]{0,90}?(Indenne|Senza Casi[^\\n]*|Allevamento Senza Casi[^\\n]*)'));
+      if(m) san.push(`${lab}: ${m[1].includes('Senza')?'senza casi clinici':'indenne'}`);
+    });
+    dc.sanita=san.join(' · ');
+    dc.trattamenti=/\[X\]\s*NON SONO STATI trattati/i.test(txt)?'Nessun trattamento con sostanze vietate (autodichiarazione ICA)':'';
+    const out=[]; const re=/\bIT\d{12,}\b/g; let m; const pos=[];
+    while((m=re.exec(txt))!==null) pos.push(m.index);
+    pos.forEach((p,i)=>{
+      const sl=txt.slice(p, i+1<pos.length?pos[i+1]:p+260);
+      const cod=sl.match(/IT\d{12,}/)[0];
+      const specieRaw=(sl.match(/(BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*/)||[''])[0];
+      const dates=sl.match(/\d{2}\/\d{2}\/\d{2,4}/g)||[];
+      const sx=sl.slice(15).match(/\b([MF])\b/);
+      let razza=''; if(sx){ const after=sl.slice(15).slice(sx.index+1).trim(); razza=(after.match(/^\s*(\S+)/)||['',''])[1]; }
+      const el=(sl.match(/\b\d{16}\b/)||[''])[0];
+      const sKey=Object.keys(specieMap).find(k=>specieRaw.startsWith(k));
+      out.push({
+        marca_auricolare: cod.replace(/^IT/,'IT '), codice_elettronico: el,
+        specie: sKey?specieMap[sKey]:'', razza, sesso: sx?(sx[1]==='F'?'Femmina':'Maschio'):'',
+        data_nascita: expandDate(dates[0]||''), paese_nascita: cod.startsWith('IT')?'Italia':'',
+        allevamento: [dc.propriet, dc.comune].filter(Boolean).join(' — '), codice_stalla: dc.stalla,
+        asl: dc.asl, stato_sanitario: dc.sanita, doc_accompagnamento: dc.doc, macello: dc.macello,
+        note: dc.trattamenti, data_macellazione:'', peso:'', lotto:'', cliente_id:''
+      });
+    });
+    return out;
+  }
+  async function pdfToCapi(file){
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    let testo='';
+    for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const tc=await page.getTextContent(); let last=null;
+      tc.items.forEach(it=>{ const y=it.transform[5]; if(last!==null && Math.abs(y-last)>3) testo+='\n'; testo+=it.str+' '; last=y; }); testo+='\n'; }
+    return testoACapi(testo);
+  }
+  async function caricaPdfMulti(ev){
+    const files=[...ev.target.files]; if(!files.length) return;
+    lottoBanner('Lettura di '+files.length+' file in corso…');
+    let agg=0, err=0;
+    for(const f of files){
+      if(f.type!=='application/pdf' && !/\.pdf$/i.test(f.name)){ err++; continue; }
+      try{ const capi=await pdfToCapi(f); capi.forEach(c=>{ c._sel=true; c._file=f.name; batch.push(c); agg++; }); }
+      catch(e){ err++; }
+    }
+    ev.target.value=''; renderBatch();
+    lottoBanner('✓ Aggiunti <b>'+agg+'</b> capi da '+files.length+' file'+(err?(' — '+err+' file non leggibili'):'')+'.');
+  }
+  function lf(i,key,label,type){
+    return `<label style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px">${label}<input type="${type||'text'}" value="${esc(batch[i][key]||'')}" onchange="batchEdit(${i},'${key}',this.value)" style="padding:7px 9px;border:1.5px solid var(--line-strong);border-radius:3px;font-size:13px;font-family:inherit;background:var(--paper)"></label>`;
+  }
+  function lfCliente(i){
+    const opts='<option value="">— nessuno —</option>'+clientiCache.map(c=>`<option value="${c.id}" ${c.id===batch[i].cliente_id?'selected':''}>${esc(c.nome)}</option>`).join('');
+    return `<label style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px">Cliente destinatario<select onchange="batchEdit(${i},'cliente_id',this.value)" style="padding:7px 9px;border:1.5px solid var(--line-strong);border-radius:3px;font-size:13px;font-family:inherit;background:var(--paper)">${opts}</select></label>`;
+  }
+  function renderBatch(){
+    const box=$('lottoLista'); if(!box) return;
+    aggiornaConteggio();
+    $('lottoExport').style.display = batch.length?'flex':'none';
+    if(!batch.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun capo. Premi "Carica PDF" e seleziona uno o più MOD 4.</p>'; return; }
+    box.innerHTML=batch.map((e,i)=>`<div style="border:2px solid var(--line-strong);border-radius:4px;background:var(--paper)">
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1.5px dashed var(--line-strong);background:#f4f1ea">
+        <input type="checkbox" ${e._sel?'checked':''} onchange="batchToggle(${i},this.checked)" style="width:18px;height:18px;flex-shrink:0">
+        <div style="flex:1;min-width:0"><span style="font-family:'IBM Plex Mono',monospace;font-weight:700">${esc(e.marca_auricolare||'(senza marca)')}</span>
+        <span style="font-size:11.5px;color:var(--ink-soft);margin-left:8px">${esc(e._file||'')}</span></div>
+        <button class="btn-ghost" style="padding:5px 11px;font-size:12px" onclick="batchRemove(${i})">✕</button>
+      </div>
+      <div style="padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+        ${lf(i,'marca_auricolare','Marca auricolare')}
+        ${lf(i,'specie','Specie')}
+        ${lf(i,'razza','Razza')}
+        ${lf(i,'sesso','Sesso')}
+        ${lf(i,'data_nascita','Data nascita','date')}
+        ${lf(i,'paese_nascita','Paese nascita')}
+        ${lf(i,'allevamento','Allevamento')}
+        ${lf(i,'codice_stalla','Codice stalla')}
+        ${lf(i,'macello','Macello (CE)')}
+        ${lf(i,'data_macellazione','Data macellazione','date')}
+        ${lf(i,'peso','Peso (kg)')}
+        ${lf(i,'lotto','Partita / Lotto')}
+        ${lfCliente(i)}
+        ${lf(i,'note','Note')}
+      </div></div>`).join('');
+  }
+  function aggiornaConteggio(){ const el=$('lottoConteggio'); if(!el) return; const s=batch.filter(e=>e._sel).length; el.textContent = batch.length?(batch.length+' capi in lista · '+s+' selezionati'):''; }
+  function batchEdit(i,key,val){ if(batch[i]) batch[i][key]=val; }
+  function batchToggle(i,ch){ if(batch[i]) batch[i]._sel=ch; aggiornaConteggio(); }
+  function batchRemove(i){ batch.splice(i,1); renderBatch(); }
+  function selezTutti(v){ batch.forEach(e=>e._sel=v); renderBatch(); }
+  function svuotaLotto(){ if(batch.length && !confirm('Svuotare tutta la lista?')) return; batch=[]; renderBatch(); }
+
+  function canvasDaCapo(e){ fillFormFromCapo(e); if(costruisciQR()===null) return null; return makeLabelCanvas(); }
+  function stampaSelezionati(){
+    const sel=batch.filter(e=>e._sel); if(!sel.length){ lottoBanner('Seleziona almeno un capo.',true); return; }
+    const items=[];
+    sel.forEach((e,n)=>{ const cv=canvasDaCapo(e); if(cv) items.push({titolo:(e.marca_auricolare||('Capo '+(n+1))), file:'etichetta_'+sanitaNome(e.marca_auricolare)+'.png', url:cv.toDataURL('image/png')}); });
+    if(!items.length){ lottoBanner('Nessuna etichetta generata (dati insufficienti).',true); return; }
+    apriEsportazioneMulti(items);
+  }
+  async function scaricaZip(){
+    const sel=batch.filter(e=>e._sel); if(!sel.length){ lottoBanner('Seleziona almeno un capo.',true); return; }
+    if(!window.JSZip){ lottoBanner('Libreria ZIP non ancora pronta, riprova tra un secondo.',true); return; }
+    lottoBanner('Preparazione ZIP…');
+    const zip=new JSZip(); let n=0;
+    for(const e of sel){ const cv=canvasDaCapo(e); if(!cv) continue; zip.file('etichetta_'+sanitaNome(e.marca_auricolare)+'.png', cv.toDataURL('image/png').split(',')[1], {base64:true}); n++; }
+    const blob=await zip.generateAsync({type:'blob'});
+    scarica(blob,'etichette_qr.zip'); lottoBanner('✓ ZIP scaricato ('+n+' etichette).');
+  }
+  async function scaricaPdf(){
+    const sel=batch.filter(e=>e._sel); if(!sel.length){ lottoBanner('Seleziona almeno un capo.',true); return; }
+    const J=window.jspdf&&window.jspdf.jsPDF; if(!J){ lottoBanner('Libreria PDF non ancora pronta, riprova tra un secondo.',true); return; }
+    lottoBanner('Preparazione PDF…'); let doc=null, n=0;
+    for(const e of sel){ const cv=canvasDaCapo(e); if(!cv) continue; const w=cv.width, h=cv.height; const o=h>=w?'portrait':'landscape';
+      if(!doc) doc=new J({unit:'px', format:[w,h], orientation:o}); else doc.addPage([w,h], o);
+      doc.addImage(cv.toDataURL('image/png'),'PNG',0,0,w,h); n++; }
+    if(doc){ doc.save('etichette_qr.pdf'); lottoBanner('✓ PDF scaricato ('+n+' etichette).'); }
+    else lottoBanner('Nessuna etichetta generata.',true);
   }
 
   // avvio: carico i dati dal cloud
