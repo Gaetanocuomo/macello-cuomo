@@ -2515,10 +2515,12 @@ var qrcode = function() {
   .filterbar input,.filterbar select{padding:8px 11px;font-size:13px;min-width:130px}
 
   /* ---- Tabella dati MOD 4 ---- */
-  .dt-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm)}
+  .dt-wrap{max-height:68vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm)}
   .dt{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
-  .dt th{position:sticky;top:0;background:#2a2320;color:#f3ebe0;font-family:'IBM Plex Mono',monospace;font-size:10px;
-    letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:11px 13px;text-align:left}
+  .dt th{position:sticky;top:0;z-index:2;background:#2a2320;color:#f3ebe0;font-family:'IBM Plex Mono',monospace;font-size:10px;
+    letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:11px 13px;text-align:left;cursor:pointer;user-select:none;white-space:nowrap}
+  .dt th:hover{background:#3a2f29}
+  .dt th .ar{color:#e9c87f;margin-left:4px}
   .dt td{padding:9px 13px;border-bottom:1px solid var(--line);color:var(--ink);vertical-align:middle}
   .dt tbody tr:nth-child(even){background:rgba(125,42,49,.022)}
   .dt tbody tr:hover{background:rgba(176,134,54,.09)}
@@ -2807,7 +2809,7 @@ var qrcode = function() {
       <div class="panel-b">
         <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px">I clienti vengono salvati nel cloud: li ritrovi da qualsiasi dispositivo.</p>
         <fieldset>
-          <legend>Nuovo cliente</legend>
+          <legend id="legendCliente">Nuovo cliente</legend>
           <div class="row">
             <div class="field full"><label>Nome / Ragione sociale</label><input type="text" id="c_nome" placeholder="es. Macelleria Rossi"></div>
             <div class="field full"><label>Indirizzo</label><input type="text" id="c_indirizzo"></div>
@@ -2819,10 +2821,15 @@ var qrcode = function() {
           </div>
         </fieldset>
         <div class="banner" id="clienteBanner" style="display:none"></div>
-        <div class="actions"><button class="btn-primary" onclick="salvaCliente()">Salva cliente</button></div>
+        <div class="actions"><button class="btn-primary" id="btnSalvaCliente" onclick="salvaCliente()">Salva cliente</button><button class="btn-ghost" id="btnAnnullaCliente" onclick="annullaModificaCliente()" style="display:none">Annulla modifica</button></div>
         <fieldset style="margin-top:8px">
           <legend>Elenco clienti</legend>
-          <div id="clientiLista" style="display:flex;flex-direction:column;gap:10px"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
+          <div class="filterbar">
+            <div class="fc" style="flex:1;min-width:200px"><span class="fc-lab">Ricerca</span><input type="text" id="cli_search" placeholder="Nome, comune, P.IVA, telefono, email…" oninput="renderClienti()"></div>
+            <button class="btn-ghost" onclick="azzeraFiltriClienti()" style="padding:9px 16px">Azzera</button>
+          </div>
+          <p id="cliConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 12px"></p>
+          <div id="clientiLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
         </fieldset>
       </div>
     </section>
@@ -2968,13 +2975,47 @@ var qrcode = function() {
       clientiCache=data||[]; renderClienti(); popolaTendinaClienti(); popolaFiltroClienti();
     }catch(e){ $('clientiLista').innerHTML='<p class="banner err" style="display:block">Errore: '+esc(e.message||e)+'</p>'; }
   }
+  let editCliente=null;
+  function azzeraFiltriClienti(){ if($('cli_search')) $('cli_search').value=''; renderClienti(); }
   function renderClienti(){
-    const box=$('clientiLista');
-    if(!clientiCache.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun cliente ancora. Aggiungine uno qui sopra.</p>'; return; }
-    box.innerHTML=clientiCache.map(c=>`<div style="border:1.5px solid var(--line-strong);border-radius:3px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;background:var(--paper)">
-      <div><div style="font-weight:700">${esc(c.nome)}</div>
-      <div style="font-size:12.5px;color:var(--ink-soft);margin-top:3px">${[c.citta,c.piva?('P.IVA '+c.piva):'',c.telefono,c.email].filter(Boolean).map(esc).join(' · ')||'—'}</div></div>
-      <button class="btn-ghost" style="padding:6px 12px;font-size:12px" onclick="eliminaCliente('${c.id}')">Elimina</button></div>`).join('');
+    const box=$('clientiLista'); if(!box) return;
+    const cnt=$('cliConteggio');
+    if(!clientiCache.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun cliente ancora. Aggiungine uno qui sopra.</p>'; if(cnt) cnt.textContent=''; return; }
+    const q=(val('cli_search')||'').toLowerCase().trim();
+    const list=clientiCache.filter(c=> !q || ((c.nome||'')+' '+(c.citta||'')+' '+(c.piva||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase().includes(q));
+    if(cnt) cnt.textContent=list.length+' di '+clientiCache.length+' clienti';
+    if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato.</p>'; return; }
+    const head=['Nome / Ragione sociale','Indirizzo','Comune/Prov','P.IVA / CF','Telefono','Email','Note','Azioni'];
+    const rows=list.map(c=> '<tr>'+[
+      '<td style="font-weight:600">'+esc(c.nome)+'</td>',
+      '<td>'+esc(c.indirizzo)+'</td>',
+      '<td>'+esc(c.citta)+'</td>',
+      '<td class="mono">'+esc(c.piva)+'</td>',
+      '<td>'+esc(c.telefono)+'</td>',
+      '<td>'+esc(c.email)+'</td>',
+      '<td>'+esc(c.note)+'</td>',
+      '<td><div class="actcell"><button class="btn-primary mini" onclick="modificaCliente(\''+c.id+'\')">Modifica</button><button class="btn-ghost mini" onclick="eliminaCliente(\''+c.id+'\')">Elimina</button></div></td>'
+    ].join('')+'</tr>').join('');
+    box.innerHTML='<div class="dt-wrap"><table class="dt"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  function modificaCliente(id){
+    const c=clientiCache.find(x=>x.id===id); if(!c) return;
+    editCliente=id;
+    $('c_nome').value=c.nome||''; $('c_indirizzo').value=c.indirizzo||''; $('c_citta').value=c.citta||'';
+    $('c_piva').value=c.piva||''; $('c_tel').value=c.telefono||''; $('c_email').value=c.email||''; $('c_note').value=c.note||'';
+    if($('legendCliente')) $('legendCliente').textContent='Modifica cliente';
+    if($('btnSalvaCliente')) $('btnSalvaCliente').textContent='Salva modifiche';
+    if($('btnAnnullaCliente')) $('btnAnnullaCliente').style.display='inline-flex';
+    setClienteBanner('Stai modificando «'+esc(c.nome)+'». Aggiorna i campi e premi Salva modifiche.');
+    $('c_nome').focus(); window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function annullaModificaCliente(){
+    editCliente=null;
+    ['c_nome','c_indirizzo','c_citta','c_piva','c_tel','c_email','c_note'].forEach(id=>{ if($(id)) $(id).value=''; });
+    if($('legendCliente')) $('legendCliente').textContent='Nuovo cliente';
+    if($('btnSalvaCliente')) $('btnSalvaCliente').textContent='Salva cliente';
+    if($('btnAnnullaCliente')) $('btnAnnullaCliente').style.display='none';
+    const b=$('clienteBanner'); if(b) b.style.display='none';
   }
   async function salvaCliente(){
     const nome=$('c_nome').value.trim();
@@ -2983,10 +3024,13 @@ var qrcode = function() {
     const rec={ nome, indirizzo:$('c_indirizzo').value.trim(), citta:$('c_citta').value.trim(),
       piva:$('c_piva').value.trim(), telefono:$('c_tel').value.trim(), email:$('c_email').value.trim(), note:$('c_note').value.trim() };
     try{
-      const {error}=await sb.from('clienti').insert(rec);
+      let error;
+      if(editCliente){ ({error}=await sb.from('clienti').update(rec).eq('id',editCliente)); }
+      else { ({error}=await sb.from('clienti').insert(rec)); }
       if(error) throw error;
-      ['c_nome','c_indirizzo','c_citta','c_piva','c_tel','c_email','c_note'].forEach(id=>$(id).value='');
-      setClienteBanner('✓ Cliente salvato.'); caricaClienti();
+      const eraModifica=!!editCliente;
+      annullaModificaCliente();
+      setClienteBanner(eraModifica?'✓ Cliente aggiornato.':'✓ Cliente salvato.'); caricaClienti();
     }catch(e){ setClienteBanner('Errore: '+esc(e.message||e), true); }
   }
   async function eliminaCliente(id){
@@ -3037,6 +3081,17 @@ var qrcode = function() {
   function popolaFiltroClienti(){ const sel=$('arch_cliente'); if(!sel) return; const cur=sel.value;
     sel.innerHTML='<option value="">Tutti i clienti</option>'+clientiCache.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join(''); if(cur) sel.value=cur; }
   function fdIso(s){ if(!s) return ''; const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:s; }
+  let archSort={key:null, dir:1};
+  function ordinaArchivio(key){ if(archSort.key===key) archSort.dir*=-1; else { archSort.key=key; archSort.dir=1; } renderArchivio(); }
+  const ARCH_COLS=[
+    {l:'Marca auricolare',k:'marca_auricolare'},{l:'Cod. elettronico',k:'codice_elettronico'},
+    {l:'Specie',k:'specie'},{l:'Razza',k:'razza'},{l:'Sesso',k:'sesso'},
+    {l:'Nascita',k:'data_nascita'},{l:'Paese',k:'paese_nascita'},{l:'Allevamento',k:'allevamento'},
+    {l:'Cod. stalla',k:'codice_stalla'},{l:'ASL',k:'asl'},{l:'Stato sanitario',k:'stato_sanitario'},
+    {l:'Doc. MOD 4',k:'doc_accompagnamento'},{l:'Macello CE',k:'macello'},{l:'Data macell.',k:'data_macellazione'},
+    {l:'Peso',k:'peso'},{l:'Lotto',k:'lotto'},{l:'Cliente',k:'_cliente'},{l:'Note',k:'note'}
+  ];
+  const ARCH_MONO=new Set(['marca_auricolare','codice_elettronico','codice_stalla','doc_accompagnamento','macello']);
   function renderArchivio(){
     const box=$('archivioLista'); if(!box) return;
     const q=val('arch_search').toLowerCase().trim(), fs=val('arch_specie'), fx=val('arch_sesso'), fc=val('arch_cliente'), dal=val('arch_dal'), al=val('arch_al');
@@ -3049,34 +3104,22 @@ var qrcode = function() {
       if(al && (c.data_macellazione||'')>al) return false;
       return true;
     });
+    if(archSort.key){ const k=archSort.key, d=archSort.dir;
+      list.sort((a,b)=>{ const va=k==='_cliente'?clienteName(a.cliente_id):String(a[k]??''); const vb=k==='_cliente'?clienteName(b.cliente_id):String(b[k]??'');
+        return va.localeCompare(vb,'it',{numeric:true,sensitivity:'base'})*d; });
+    }
     const cnt=$('archConteggio'); if(cnt) cnt.textContent = archivioCache.length ? (list.length+' di '+archivioCache.length+' capi mostrati') : '';
     if(!archivioCache.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun capo in archivio. Generane uno e premi "Salva nell\'archivio".</p>'; return; }
     if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato con i filtri impostati.</p>'; return; }
-    const head=['Marca auricolare','Cod. elettronico','Specie','Razza','Sesso','Nascita','Paese','Allevamento','Cod. stalla','ASL','Stato sanitario','Doc. MOD 4','Macello CE','Data macell.','Peso','Lotto','Cliente','Note','Azioni'];
+    const arrow=k=> archSort.key===k ? '<span class="ar">'+(archSort.dir>0?'▲':'▼')+'</span>' : '';
+    const thead='<tr>'+ARCH_COLS.map(c=>'<th onclick="ordinaArchivio(\''+c.k+'\')">'+c.l+arrow(c.k)+'</th>').join('')+'<th style="cursor:default">Azioni</th></tr>';
+    const fmt=(c,k)=> (k==='data_nascita'||k==='data_macellazione')?fdIso(c[k]) : (k==='_cliente'?clienteName(c.cliente_id):c[k]);
     const rows=list.map(c=>{ const i=archivioCache.indexOf(c);
-      return '<tr>'+[
-        '<td class="mono" style="font-weight:600">'+esc(c.marca_auricolare)+'</td>',
-        '<td class="mono">'+esc(c.codice_elettronico)+'</td>',
-        '<td>'+esc(c.specie)+'</td>',
-        '<td>'+esc(c.razza)+'</td>',
-        '<td>'+esc(c.sesso)+'</td>',
-        '<td>'+esc(fdIso(c.data_nascita))+'</td>',
-        '<td>'+esc(c.paese_nascita)+'</td>',
-        '<td>'+esc(c.allevamento)+'</td>',
-        '<td class="mono">'+esc(c.codice_stalla)+'</td>',
-        '<td>'+esc(c.asl)+'</td>',
-        '<td>'+esc(c.stato_sanitario)+'</td>',
-        '<td class="mono">'+esc(c.doc_accompagnamento)+'</td>',
-        '<td class="mono">'+esc(c.macello)+'</td>',
-        '<td>'+esc(fdIso(c.data_macellazione))+'</td>',
-        '<td>'+esc(c.peso)+'</td>',
-        '<td>'+esc(c.lotto)+'</td>',
-        '<td>'+esc(clienteName(c.cliente_id))+'</td>',
-        '<td>'+esc(c.note)+'</td>',
-        '<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td>'
-      ].join('')+'</tr>';
+      const tds=ARCH_COLS.map(col=>{ let attr=''; if(ARCH_MONO.has(col.k)) attr=' class="mono"'; if(col.k==='marca_auricolare') attr=' class="mono" style="font-weight:600"';
+        return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
+      return '<tr>'+tds+'<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
     }).join('');
-    box.innerHTML='<div class="dt-wrap"><table class="dt"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+    box.innerHTML='<div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
   }
   async function eliminaCapo(id){
     if(!confirm('Eliminare questo capo dall\'archivio?')) return; if(!sb) return;
@@ -3155,15 +3198,30 @@ var qrcode = function() {
   }
   async function caricaPdfMulti(ev){
     const files=[...ev.target.files]; if(!files.length) return;
-    lottoBanner('Lettura di '+files.length+' file in corso…');
+    const norm=s=>String(s||'').replace(/\.pdf$/i,'').trim().toUpperCase();
+    const inLista=new Set(batch.map(e=>norm(e._file)));
+    const inArchivio=new Set(archivioCache.map(c=>norm(c.doc_accompagnamento)).filter(Boolean));
+    const dup=[], nuovi=[];
+    files.forEach(f=>{ const k=norm(f.name); (inLista.has(k)||inArchivio.has(k)) ? dup.push(f) : nuovi.push(f); });
+
+    let daCaricare=nuovi.slice(), inclusi=false;
+    if(dup.length){
+      const elenco=dup.map(f=>'• '+f.name).join('\n');
+      const ok=confirm('CONTROLLO DUPLICATI\n\n'+dup.length+' MOD 4 risultano GIÀ caricati in lista o già presenti in archivio:\n\n'+elenco+'\n\nVuoi caricarli lo stesso?\n\n• OK = carica anche questi (crei dei doppioni)\n• Annulla = salta i doppioni e carica solo i nuovi');
+      if(ok){ daCaricare=daCaricare.concat(dup); inclusi=true; }
+    }
+    if(!daCaricare.length){ ev.target.value=''; lottoBanner('Nessun nuovo MOD 4 caricato: erano tutti già presenti.', true); return; }
+
+    lottoBanner('Lettura di '+daCaricare.length+' file in corso…');
     let agg=0, err=0;
-    for(const f of files){
+    for(const f of daCaricare){
       if(f.type!=='application/pdf' && !/\.pdf$/i.test(f.name)){ err++; continue; }
       try{ const capi=await pdfToCapi(f); capi.forEach(c=>{ c._sel=true; c._file=f.name; batch.push(c); agg++; }); }
       catch(e){ err++; }
     }
     ev.target.value=''; renderBatch();
-    lottoBanner('✓ Aggiunti <b>'+agg+'</b> capi da '+files.length+' file'+(err?(' — '+err+' file non leggibili'):'')+'.');
+    const extra=[]; if(dup.length){ extra.push(inclusi?(dup.length+' doppioni inclusi'):(dup.length+' doppioni saltati')); } if(err) extra.push(err+' non leggibili');
+    lottoBanner('✓ Aggiunti <b>'+agg+'</b> capi da '+daCaricare.length+' file'+(extra.length?(' · '+extra.join(' · ')):'')+'.');
   }
   function lf(i,key,label,type){
     return `<label style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px">${label}<input type="${type||'text'}" value="${esc(batch[i][key]||'')}" onchange="batchEdit(${i},'${key}',this.value)" style="padding:7px 9px;border:1.5px solid var(--line-strong);border-radius:3px;font-size:13px;font-family:inherit;background:var(--paper)"></label>`;
