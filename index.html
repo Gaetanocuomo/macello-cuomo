@@ -3729,10 +3729,14 @@ var qrcode = function() {
       });
     }
 
-    // barra scura
+    // barra (bianca, testo nero, con linee di contorno)
     if(cfg.barra){
-      ctx.fillStyle='#1c1a17'; ctx.fillRect(0,companyH,W,barH);
-      ctx.fillStyle='#f4f1ea'; ctx.textBaseline='middle'; ctx.font='600 20px monospace';
+      ctx.fillStyle='#fbfaf6'; ctx.fillRect(0,companyH,W,barH);
+      ctx.strokeStyle='#1c1a17'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(0,companyH+0.75); ctx.lineTo(W,companyH+0.75); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,companyH+barH-0.75); ctx.lineTo(W,companyH+barH-0.75); ctx.stroke();
+      ctx.lineWidth=1;
+      ctx.fillStyle='#1c1a17'; ctx.textBaseline='middle'; ctx.font='600 20px monospace';
       ctx.textAlign='left';  ctx.fillText('SCHEDA ANAGRAFICA',28,companyH+barH/2+1);
       ctx.textAlign='right'; ctx.fillText(($('f_specie').value||'CAPO').toUpperCase(),W-28,companyH+barH/2+1);
     }
