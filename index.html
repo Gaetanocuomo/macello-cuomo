@@ -2515,13 +2515,11 @@ var qrcode = function() {
   .filterbar .fc-lab{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
   .filterbar input,.filterbar select{padding:8px 11px;font-size:13px;width:100%}
 
-  /* ---- Barra di scorrimento sopra la tabella ---- */
-  .dt-topscroll{overflow-x:scroll;overflow-y:hidden;height:16px;margin-bottom:8px;scrollbar-color:#9c7d4f #ece3d3}
-  .dt-topscroll-inner{height:1px}
-  .dt-topscroll::-webkit-scrollbar{height:14px}
-  .dt-topscroll::-webkit-scrollbar-track{background:#ece3d3;border-radius:7px}
-  .dt-topscroll::-webkit-scrollbar-thumb{background:#9c7d4f;border-radius:7px;border:3px solid #ece3d3}
-  .dt-topscroll::-webkit-scrollbar-thumb:hover{background:#7d2a31}
+  /* ---- Pulsanti scorrimento tabella ---- */
+  .scrollnav{display:flex;align-items:center;gap:9px;margin-bottom:10px;font-size:12px;color:var(--ink-soft);flex-wrap:wrap}
+  .scrollnav span{font-weight:600}
+  .scrollnav button{width:44px;height:34px;border:1.5px solid var(--oxblood);background:var(--oxblood);color:#fff;border-radius:8px;font-size:16px;cursor:pointer;line-height:1;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+  .scrollnav button:hover{background:var(--oxblood-dk)}
 
   /* ---- Tabella dati MOD 4 ---- */
   .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-color:#b9a98c #efe7d8;scrollbar-width:auto}
@@ -2930,7 +2928,7 @@ var qrcode = function() {
         <fieldset style="margin-top:8px">
           <legend>Elenco clienti</legend>
           <div class="filterbar">
-            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca</span><input type="text" id="cli_search" placeholder="Nome, indirizzo, comune, provincia, P.IVA, C.F., telefono, email…" oninput="renderClienti()"></div>
+            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca</span><input type="text" id="cli_search" placeholder="Nome, indirizzo, comune, provincia, P.IVA, C.F., telefono, email…" oninput="renderClienti()" style="max-width:560px"></div>
             <button class="btn-ghost" onclick="azzeraFiltriClienti()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera</button>
           </div>
           <p id="cliConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 12px"></p>
@@ -2966,7 +2964,7 @@ var qrcode = function() {
           <legend>Capi salvati nell'archivio</legend>
           <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:6px 0 14px">I capi salvati dal Generatore con "Salva nell'archivio". Cerca, ristampa l'etichetta o elimina.</p>
           <div class="filterbar">
-            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca libera</span><input type="text" id="arch_search" placeholder="Marca, razza, lotto, allevamento…" oninput="renderArchivio()"></div>
+            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca libera</span><input type="text" id="arch_search" placeholder="Marca, razza, lotto, allevamento…" oninput="renderArchivio()" style="max-width:520px"></div>
             <div class="fc"><span class="fc-lab">Specie</span><select id="arch_specie" onchange="renderArchivio()"><option value="">Tutte</option><option>Bovino</option><option>Bufalino</option><option>Suino</option><option>Ovino</option><option>Caprino</option><option>Equino</option></select></div>
             <div class="fc"><span class="fc-lab">Sesso</span><select id="arch_sesso" onchange="renderArchivio()"><option value="">Tutti</option><option>Maschio</option><option>Femmina</option></select></div>
             <div class="fc"><span class="fc-lab">Cliente</span><select id="arch_cliente" onchange="renderArchivio()"><option value="">Tutti i clienti</option></select></div>
@@ -2975,7 +2973,7 @@ var qrcode = function() {
             <button class="btn-ghost" onclick="azzeraFiltri()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera filtri</button>
           </div>
           <p id="archConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 6px"></p>
-          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne: usa la <b>barra di scorrimento qui sopra la tabella</b> (o Shift + rotellina del mouse) per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note.</p>
+          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne: usa i <b>pulsanti ◀ ▶ "Scorri la tabella"</b> qui sotto (o Shift + rotellina del mouse) per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note.</p>
           <div id="archivioLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
         </fieldset>
       </div>
@@ -3313,14 +3311,9 @@ var qrcode = function() {
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
       return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
     }).join('');
-    box.innerHTML=bulk+'<div class="dt-topscroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
-    const ts=box.querySelector('.dt-topscroll'), tsi=box.querySelector('.dt-topscroll-inner'), wrap=box.querySelector('.dt-wrap'), tbl=wrap.querySelector('table');
-    const syncTop=()=>{ tsi.style.width=Math.max(wrap.scrollWidth, tbl.scrollWidth)+'px'; };
-    syncTop(); requestAnimationFrame(syncTop); setTimeout(syncTop,150); setTimeout(syncTop,400);
-    let lock=false;
-    ts.addEventListener('scroll',()=>{ if(lock) return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; });
-    wrap.addEventListener('scroll',()=>{ if(lock) return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; });
+    box.innerHTML=bulk+'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollArch(-1)">◀</button><button type="button" title="Verso destra" onclick="scrollArch(1)">▶</button></div><div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
   }
+  function scrollArch(dir){ const w=document.querySelector('#archivioLista .dt-wrap'); if(w) w.scrollBy({left:dir*Math.max(320,w.clientWidth*0.75),behavior:'smooth'}); }
   function aggiornaArchBulk(){
     const bar=$('archBulk'); if(bar) bar.style.display=archSel.size?'flex':'none';
     const c=$('archSelCnt'); if(c) c.textContent=archSel.size+' selezionati';
