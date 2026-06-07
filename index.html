@@ -2597,10 +2597,11 @@ var qrcode = function() {
   .modal-f{display:flex;gap:10px;padding:16px 22px;border-top:1px solid var(--line);background:var(--paper)}
 
   @media print{
-    body{background:#fff;padding:0}
+    body{background:#fff;padding:0;margin:0}
     body::before{display:none}
-    .wrap>*:not(#printArea){display:none!important}
+    body>*:not(#printArea){display:none!important}
     #printArea{display:block!important;position:static}
+    #printArea img{max-width:340px;display:block;margin:0 auto}
     .label-card{box-shadow:none;margin:0 auto}
   }
   #printArea{display:none}
@@ -3607,7 +3608,7 @@ var qrcode = function() {
   }
   function etichettaArchivio(i){
     const c=archivioCache[i]; if(!c) return;
-    fillFormFromCapo(c); vista('gen'); genera(); apriEsportazione(false);
+    fillFormFromCapo(c); genera(); apriEsportazione(false);
   }
 
   /* ---------------- Lotto QR (più MOD 4) ---------------- */
