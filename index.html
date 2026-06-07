@@ -2509,7 +2509,7 @@ var qrcode = function() {
     .dt-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;cursor:auto!important}
     .dt{white-space:nowrap!important;table-layout:auto!important}
     .dt td,.dt th{overflow-wrap:normal!important;word-break:normal!important}
-    .dt-arch td.allev{max-width:none}
+    .dt-arch td.allev,.dt-arch td.cli-rs,.dt-arch td.cli-ind,.dt-arch td.cli-loc{max-width:none}
   }
 
   /* ---- Filtri archivio ---- */
@@ -2540,6 +2540,9 @@ var qrcode = function() {
   .dt-arch{white-space:nowrap;font-size:12.5px}
   .dt-arch td,.dt-arch th{overflow-wrap:normal;word-break:normal}
   .dt-arch td.allev{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dt-arch td.cli-rs{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dt-arch td.cli-ind{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dt-arch td.cli-loc{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dt-arch .actcell{flex-wrap:wrap}
   .iconbtn{padding:6px 9px!important;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
   .iconbtn svg{display:block}
@@ -3167,25 +3170,22 @@ var qrcode = function() {
       +'<button class="btn-ghost mini" onclick="eliminaClientiSelezionati()">🗑️ Elimina selezionati</button>'
       +'<button class="btn-ghost mini" onclick="deselezionaCli()">Deseleziona tutto</button></div>';
     const allChecked=cliVisibleIds.length>0 && cliVisibleIds.every(id=>cliSel.has(id));
-    const head=['Ragione sociale','Indirizzo','CAP','Località','Prov.','Partita IVA','Cod. Fiscale','Telefono','Email','Note','Azioni'];
+    const head=['Ragione sociale','Indirizzo','CAP','Località','Prov.','Partita IVA','Cod. Fiscale','Azioni'];
     const thead='<tr><th class="selcell"><input type="checkbox" id="cliSelAll" onclick="toggleCliSelAll(this)" '+(allChecked?'checked':'')+'></th>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>';
+    const trash='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';
     const rows=list.map(c=> '<tr><td class="selcell"><input type="checkbox" onclick="toggleCliSel(\''+c.id+'\',this)" '+(cliSel.has(c.id)?'checked':'')+'></td>'+[
-      '<td style="font-weight:600">'+esc(c.nome)+'</td>',
-      '<td>'+esc(c.indirizzo)+'</td>',
+      '<td class="cli-rs" style="font-weight:600">'+esc(c.nome)+'</td>',
+      '<td class="cli-ind">'+esc(c.indirizzo)+'</td>',
       '<td class="mono">'+esc(c.cap)+'</td>',
-      '<td>'+esc(c.citta)+'</td>',
+      '<td class="cli-loc">'+esc(c.citta)+'</td>',
       '<td class="mono">'+esc(c.provincia)+'</td>',
       '<td class="mono">'+esc(c.piva)+'</td>',
       '<td class="mono">'+esc(c.cod_fiscale)+'</td>',
-      '<td>'+esc(c.telefono)+'</td>',
-      '<td>'+esc(c.email)+'</td>',
-      '<td>'+esc(c.note)+'</td>',
-      '<td><div class="actcell"><button class="btn-primary mini" onclick="modificaCliente(\''+c.id+'\')">Modifica</button><button class="btn-ghost mini" onclick="eliminaCliente(\''+c.id+'\')">Elimina</button></div></td>'
+      '<td><div class="actcell"><button class="btn-ghost mini iconbtn" title="Dettagli — vedi tutti i dati" onclick="dettagliCliente(\''+c.id+'\')">🔍</button><button class="btn-ghost mini iconbtn" title="Modifica" onclick="modificaCliente(\''+c.id+'\')">✏️</button><button class="btn-ghost mini iconbtn btn-del" title="Elimina" onclick="eliminaCliente(\''+c.id+'\')">'+trash+'</button></div></td>'
     ].join('')+'</tr>').join('');
     box.innerHTML=bulk
       +'<p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px">Usa i filtri qui sopra per restringere i risultati. <span class="mobile-only" style="color:var(--oxblood);font-weight:600">👉 Su telefono scorri la tabella con il dito per vedere tutte le colonne.</span></p>'
-      +'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollWrapById(\'cliWrap\',-1)">◀</button><button type="button" title="Verso destra" onclick="scrollWrapById(\'cliWrap\',1)">▶</button><input type="range" class="scrollrange" id="cliRange" min="0" max="1000" value="0" title="Trascina per scorrere la tabella"></div>'
-      +'<div class="dt-wrap" id="cliWrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+      +'<div class="dt-wrap" id="cliWrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
   }
   function aggiornaCliBulk(){
     const bar=$('cliBulk'); if(bar) bar.style.display=cliSel.size?'flex':'none';
@@ -3424,6 +3424,24 @@ var qrcode = function() {
     }
     m.innerHTML='<div class="modal-card"><div class="modal-h"><span>Scheda capo</span><span class="modal-x" onclick="chiudiModalCapo()">×</span></div><div class="modal-b">'+body+'</div><div class="modal-f"><button class="btn-primary" id="btnEtichettaCapo">🖨️ Genera / stampa etichetta</button><button class="btn-ghost" onclick="chiudiModalCapo()">Chiudi</button></div></div>';
     m.querySelector('#btnEtichettaCapo').onclick=()=>{ chiudiModalCapo(); etichettaArchivio(i); };
+    m.style.display='flex';
+  }
+  function chiudiModalDett(){ const m=document.getElementById('dettModal'); if(m) m.style.display='none'; }
+  function dettagliCliente(id){
+    const c=clientiCache.find(x=>x.id===id); if(!c) return;
+    const rows=[
+      ['Ragione sociale',c.nome],['Indirizzo',c.indirizzo],['CAP',c.cap],['Località / Comune',c.citta],
+      ['Provincia',c.provincia],['Partita IVA',c.piva],['Codice Fiscale',c.cod_fiscale],
+      ['Telefono',c.telefono],['Email',c.email],['Note',c.note]
+    ];
+    const body='<div class="dgrid">'+rows.map(r=>'<div class="drow"><span class="dk">'+esc(r[0])+'</span><span class="dv">'+(r[1]?esc(String(r[1])):'—')+'</span></div>').join('')+'</div>';
+    let m=document.getElementById('dettModal');
+    if(!m){ m=document.createElement('div'); m.id='dettModal'; m.className='modal'; m.style.display='none';
+      m.addEventListener('click',e=>{ if(e.target===m) chiudiModalDett(); });
+      document.body.appendChild(m);
+    }
+    m.innerHTML='<div class="modal-card"><div class="modal-h"><span>Scheda cliente</span><span class="modal-x" onclick="chiudiModalDett()">×</span></div><div class="modal-b">'+body+'</div><div class="modal-f"><button class="btn-primary" id="btnModCli">✏️ Modifica</button><button class="btn-ghost" onclick="chiudiModalDett()">Chiudi</button></div></div>';
+    m.querySelector('#btnModCli').onclick=()=>{ chiudiModalDett(); modificaCliente(id); };
     m.style.display='flex';
   }
   // ---- Scorrimento orizzontale riutilizzabile per qualsiasi tabella ----
