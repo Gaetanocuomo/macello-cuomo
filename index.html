@@ -4141,6 +4141,8 @@ var qrcode = function() {
     const _cli=(cfg.cliente && _cliId)?clientiCache.find(c=>c.id===_cliId):null;
     const campi=[];
     const pushF=(cond,k,v)=>{ if(cond && v && String(v).trim()) campi.push([k, String(v).trim()]); };
+    if(_cli){ const _addr=[_cli.indirizzo,_cli.citta].filter(Boolean).join(', '); campi.push(['Cliente', _cli.nome+(_addr?(' ('+_addr+')'):'')]); }
+    pushF(cfg.f_lotto,'Partita / Lotto',$('f_lotto').value);
     pushF(cfg.f_specie,'Specie',$('f_specie').value);
     pushF(cfg.f_razza,'Razza',$('f_razza').value);
     pushF(cfg.f_sesso,'Sesso',$('f_sesso').value);
@@ -4149,8 +4151,6 @@ var qrcode = function() {
     pushF(cfg.f_stalla,'Codice stalla',$('f_codstalla').value);
     pushF(cfg.f_macello,'Macello (CE)',$('f_macello').value);
     pushF(cfg.f_datamac,'Data macellazione',fmtDate($('f_datamac').value));
-    if(_cli){ const _addr=[_cli.indirizzo,_cli.citta].filter(Boolean).join(', '); campi.push(['Cliente', _cli.nome+(_addr?(' ('+_addr+')'):'')]); }
-    pushF(cfg.f_lotto,'Partita / Lotto',$('f_lotto').value);
     const labelColW=205, valX=M+labelColW, valMaxW=W-valX-M;
     meas.font='600 19px sans-serif';
     const rows=campi.map(([k,v])=>({k, lines:wrapText(meas, String(v).trim(), valMaxW)}));
