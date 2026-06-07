@@ -2515,12 +2515,12 @@ var qrcode = function() {
   .filterbar input,.filterbar select{padding:8px 11px;font-size:13px;width:100%}
 
   /* ---- Barra di scorrimento sopra la tabella ---- */
-  .dt-topscroll{overflow-x:auto;overflow-y:hidden;height:17px;margin-bottom:7px;border:1px solid var(--line);border-radius:8px;background:var(--paper-2);scrollbar-color:#b9a98c #efe7d8}
+  .dt-topscroll{overflow-x:scroll;overflow-y:hidden;height:16px;margin-bottom:8px;scrollbar-color:#9c7d4f #ece3d3}
   .dt-topscroll-inner{height:1px}
-  .dt-topscroll::-webkit-scrollbar{height:15px}
-  .dt-topscroll::-webkit-scrollbar-track{background:#efe7d8;border-radius:8px}
-  .dt-topscroll::-webkit-scrollbar-thumb{background:#b9a98c;border-radius:8px;border:3px solid #efe7d8}
-  .dt-topscroll::-webkit-scrollbar-thumb:hover{background:#8a7f6e}
+  .dt-topscroll::-webkit-scrollbar{height:14px}
+  .dt-topscroll::-webkit-scrollbar-track{background:#ece3d3;border-radius:7px}
+  .dt-topscroll::-webkit-scrollbar-thumb{background:#9c7d4f;border-radius:7px;border:3px solid #ece3d3}
+  .dt-topscroll::-webkit-scrollbar-thumb:hover{background:#7d2a31}
 
   /* ---- Tabella dati MOD 4 ---- */
   .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-color:#b9a98c #efe7d8;scrollbar-width:auto}
@@ -3244,8 +3244,8 @@ var qrcode = function() {
     }).join('');
     box.innerHTML=bulk+'<div class="dt-topscroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
     const ts=box.querySelector('.dt-topscroll'), tsi=box.querySelector('.dt-topscroll-inner'), wrap=box.querySelector('.dt-wrap'), tbl=wrap.querySelector('table');
-    const syncTop=()=>{ tsi.style.width=tbl.scrollWidth+'px'; };
-    syncTop(); requestAnimationFrame(syncTop); setTimeout(syncTop,200);
+    const syncTop=()=>{ tsi.style.width=Math.max(wrap.scrollWidth, tbl.scrollWidth)+'px'; };
+    syncTop(); requestAnimationFrame(syncTop); setTimeout(syncTop,150); setTimeout(syncTop,400);
     let lock=false;
     ts.addEventListener('scroll',()=>{ if(lock) return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; });
     wrap.addEventListener('scroll',()=>{ if(lock) return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; });
