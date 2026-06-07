@@ -2520,6 +2520,7 @@ var qrcode = function() {
   .scrollnav span{font-weight:600}
   .scrollnav button{width:44px;height:34px;border:1.5px solid var(--oxblood);background:var(--oxblood);color:#fff;border-radius:8px;font-size:16px;cursor:pointer;line-height:1;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
   .scrollnav button:hover{background:var(--oxblood-dk)}
+  .scrollrange{flex:1;min-width:160px;max-width:460px;height:24px;accent-color:var(--oxblood);cursor:pointer;margin:0 4px}
 
   /* ---- Tabella dati MOD 4 ---- */
   .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-width:auto;cursor:grab;user-select:none;-webkit-user-select:none;-ms-user-select:none}
@@ -3159,9 +3160,9 @@ var qrcode = function() {
     ].join('')+'</tr>').join('');
     box.innerHTML=bulk
       +'<p style="font-size:11.5px;color:var(--oxblood);margin:0 0 8px">↔ La tabella ha molte colonne. Per vedere Telefono, Email, Note: <b>clicca sulla tabella e trascinala</b> verso sinistra col mouse, oppure usa i <b>pulsanti ◀ ▶</b> o la rotella del mouse.</p>'
-      +'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollWrapById(\'cliWrap\',-1)">◀</button><button type="button" title="Verso destra" onclick="scrollWrapById(\'cliWrap\',1)">▶</button></div>'
+      +'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollWrapById(\'cliWrap\',-1)">◀</button><button type="button" title="Verso destra" onclick="scrollWrapById(\'cliWrap\',1)">▶</button><input type="range" class="scrollrange" id="cliRange" min="0" max="1000" value="0" title="Trascina per scorrere la tabella"></div>'
       +'<div class="dt-wrap" id="cliWrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
-    setupDragScroll($('cliWrap'));
+    setupDragScroll($('cliWrap')); bindRange($('cliWrap'), $('cliRange'));
   }
   function aggiornaCliBulk(){
     const bar=$('cliBulk'); if(bar) bar.style.display=cliSel.size?'flex':'none';
@@ -3363,14 +3364,14 @@ var qrcode = function() {
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
       return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
     }).join('');
-    box.innerHTML=bulk+'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollArch(-1)">◀</button><button type="button" title="Verso destra" onclick="scrollArch(1)">▶</button></div><div class="dt-topscroll" id="archTopScroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap" id="archWrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+    box.innerHTML=bulk+'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollArch(-1)">◀</button><button type="button" title="Verso destra" onclick="scrollArch(1)">▶</button><input type="range" class="scrollrange" id="archRange" min="0" max="1000" value="0" title="Trascina per scorrere la tabella"></div><div class="dt-topscroll" id="archTopScroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap" id="archWrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
     const ts=$('archTopScroll'), tsi=ts.firstElementChild, wrap=$('archWrap'), tbl=wrap.querySelector('table');
     const sync=()=>{ tsi.style.width=Math.max(wrap.scrollWidth, tbl.scrollWidth)+'px'; };
     sync(); requestAnimationFrame(sync); setTimeout(sync,200); setTimeout(sync,500);
     let lock=false;
     ts.onscroll=()=>{ if(lock)return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; };
     wrap.onscroll=()=>{ if(lock)return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; };
-    setupDragScroll(wrap);
+    setupDragScroll(wrap); bindRange(wrap, $('archRange'));
   }
   function scrollArch(dir){ scrollWrapById('archWrap', dir); }
   // ---- Scorrimento orizzontale riutilizzabile per qualsiasi tabella ----
@@ -3379,6 +3380,14 @@ var qrcode = function() {
     const amt=Math.max(240, Math.round(w.clientWidth*0.6));
     const max=Math.max(0, w.scrollWidth - w.clientWidth);
     w.scrollLeft = Math.max(0, Math.min(max, w.scrollLeft + dir*amt));
+  }
+  function bindRange(wrap, slider){
+    if(!wrap || !slider) return;
+    const maxScroll=()=>Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+    const updSlider=()=>{ const m=maxScroll(); slider.value = m ? Math.round(wrap.scrollLeft/m*1000) : 0; };
+    slider.addEventListener('input', ()=>{ const m=maxScroll(); wrap.scrollLeft = m*(slider.value/1000); });
+    wrap.addEventListener('scroll', updSlider);
+    updSlider(); setTimeout(updSlider, 300); setTimeout(updSlider, 600);
   }
   function setupDragScroll(wrap){
     if(!wrap || wrap._dragReady) return; wrap._dragReady=true;
