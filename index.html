@@ -2506,6 +2506,10 @@ var qrcode = function() {
     .navitem{white-space:nowrap;padding:9px 12px;font-size:12.5px}
     .side-foot{display:none}
     .main{padding:22px 18px 60px}
+    .dt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .dt{white-space:nowrap}
+    .dt td,.dt th{overflow-wrap:normal;word-break:normal}
+    .dt-arch td.allev{max-width:none}
   }
 
   /* ---- Filtri archivio ---- */
@@ -2542,6 +2546,8 @@ var qrcode = function() {
   .dk{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
   .dv{font-size:14px;color:var(--ink);word-break:break-word}
   @media(max-width:560px){.dgrid{grid-template-columns:1fr}}
+  .mobile-only{display:none}
+  @media(max-width:860px){.mobile-only{display:inline}}
   .dt th{position:sticky;top:0;z-index:2;background:#2a2320;color:#f3ebe0;font-family:'IBM Plex Mono',monospace;font-size:10px;
     letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:11px 13px;text-align:left;cursor:pointer;user-select:none;white-space:nowrap}
   .dt th:hover{background:#3a2f29}
@@ -3021,7 +3027,7 @@ var qrcode = function() {
             <button class="btn-ghost" onclick="azzeraFiltri()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera filtri</button>
           </div>
           <p id="archConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 6px"></p>
-          <p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 12px">Tutte le colonne sono visibili. Tocca le intestazioni per ordinare; usa i filtri qui sopra per restringere i risultati.</p>
+          <p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 12px">Tocca le intestazioni per ordinare; usa i filtri qui sopra per restringere i risultati. <span class="mobile-only" style="color:var(--oxblood);font-weight:600">👉 Su telefono scorri la tabella con il dito per vedere tutte le colonne.</span></p>
           <div id="archivioLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
         </fieldset>
       </div>
@@ -3178,7 +3184,7 @@ var qrcode = function() {
       '<td><div class="actcell"><button class="btn-primary mini" onclick="modificaCliente(\''+c.id+'\')">Modifica</button><button class="btn-ghost mini" onclick="eliminaCliente(\''+c.id+'\')">Elimina</button></div></td>'
     ].join('')+'</tr>').join('');
     box.innerHTML=bulk
-      +'<p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px">Tutte le colonne sono visibili. Usa i filtri qui sopra per restringere i risultati.</p>'
+      +'<p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px">Usa i filtri qui sopra per restringere i risultati. <span class="mobile-only" style="color:var(--oxblood);font-weight:600">👉 Su telefono scorri la tabella con il dito per vedere tutte le colonne.</span></p>'
       +'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollWrapById(\'cliWrap\',-1)">◀</button><button type="button" title="Verso destra" onclick="scrollWrapById(\'cliWrap\',1)">▶</button><input type="range" class="scrollrange" id="cliRange" min="0" max="1000" value="0" title="Trascina per scorrere la tabella"></div>'
       +'<div class="dt-wrap" id="cliWrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
     setupDragScroll($('cliWrap')); bindRange($('cliWrap'), $('cliRange'));
