@@ -6,7 +6,7 @@
 <title>Generatore QR · Scheda Anagrafica Animali</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2337,128 +2337,139 @@ var qrcode = function() {
 </script>
 <style>
   :root{
-    --paper:#f4f1ea; --paper-2:#fbfaf6; --ink:#1c1a17; --ink-soft:#5a554c;
-    --line:#d8d2c5; --line-strong:#bdb6a6; --oxblood:#8a2b22; --oxblood-dk:#6d211a;
-    --amber:#c9881f; --green:#3f6b3a; --shadow:18px 18px 0 rgba(28,26,23,.06);
+    --paper:#faf6ef; --paper-2:#fffdf9; --ink:#241d19; --ink-soft:#6b6358;
+    --line:#e7e0d3; --line-strong:#d3cab9; --oxblood:#7d2a31; --oxblood-dk:#5f1f25;
+    --amber:#b08636; --green:#4a6b46;
+    --shadow:0 1px 2px rgba(36,29,25,.05), 0 14px 34px -16px rgba(36,29,25,.22);
+    --shadow-sm:0 1px 2px rgba(36,29,25,.06), 0 6px 16px -10px rgba(36,29,25,.18);
+    --radius:12px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
-    font-family:'IBM Plex Sans',sans-serif;background:var(--paper);
-    background-image:radial-gradient(circle at 1px 1px, rgba(28,26,23,.045) 1px, transparent 0);
-    background-size:22px 22px;color:var(--ink);-webkit-font-smoothing:antialiased;
-    padding:32px 20px 80px;
+    font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    background:
+      radial-gradient(1100px 560px at 50% -10%, #fcf4e7 0%, transparent 62%),
+      linear-gradient(180deg,#f4ede1 0%, #ece3d4 100%);
+    background-attachment:fixed;min-height:100vh;padding:34px 20px 96px;position:relative;
   }
-  .wrap{max-width:1180px;margin:0 auto}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.6;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");}
+  .wrap{max-width:1180px;margin:0 auto;position:relative;z-index:1;animation:rise .5s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
+  /* ---- Intestazione ---- */
   header.masthead{
-    border:2px solid var(--ink);background:var(--paper-2);box-shadow:var(--shadow);
-    padding:26px 30px;display:flex;align-items:center;justify-content:space-between;
-    gap:24px;flex-wrap:wrap;position:relative;overflow:hidden;
+    border-radius:var(--radius);overflow:hidden;position:relative;border:1px solid rgba(0,0,0,.22);
+    background:linear-gradient(135deg,#2a2320 0%, #3c2620 45%, #61202a 100%);
+    color:#f3ebe0;box-shadow:var(--shadow);
+    padding:30px 34px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;
   }
-  header.masthead::after{content:"";position:absolute;inset:0;
-    background:repeating-linear-gradient(45deg,transparent,transparent 14px,rgba(138,43,34,.05) 14px,rgba(138,43,34,.05) 28px);pointer-events:none;}
-  .brand{display:flex;align-items:center;gap:18px;z-index:1}
-  .stamp{width:62px;height:62px;border-radius:50%;border:2.5px solid var(--oxblood);color:var(--oxblood);
-    display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
-    font-weight:600;font-size:11px;text-align:center;line-height:1.05;transform:rotate(-9deg);flex-shrink:0;}
-  .brand h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(22px,3.4vw,33px);letter-spacing:-.02em;line-height:.98;}
-  .brand p{font-size:13px;color:var(--ink-soft);margin-top:4px;font-weight:500}
-  .meta{z-index:1;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
-  .meta b{color:var(--ink)}
+  header.masthead::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(440px 220px at 90% -40%, rgba(176,134,54,.30), transparent 60%),
+      repeating-linear-gradient(45deg,transparent,transparent 17px,rgba(255,255,255,.022) 17px,rgba(255,255,255,.022) 34px);}
+  .brand{display:flex;align-items:center;gap:20px;z-index:1}
+  .stamp{width:64px;height:64px;border-radius:50%;border:2px solid rgba(176,134,54,.85);
+    color:#e9c87f;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+    font-weight:600;font-size:11px;text-align:center;line-height:1.1;transform:rotate(-8deg);flex-shrink:0;
+    box-shadow:inset 0 0 0 4px rgba(176,134,54,.16);}
+  #headerLogo{border-radius:9px;background:#fffdf9;padding:7px;box-shadow:0 6px 16px -8px rgba(0,0,0,.5)}
+  .brand h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(24px,3.4vw,35px);
+    letter-spacing:-.01em;line-height:1.0;color:#fdf8f0;}
+  .brand p{font-size:13px;color:rgba(243,235,224,.74);margin-top:7px;font-weight:400;letter-spacing:.01em}
+  .meta{z-index:1;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    color:rgba(243,235,224,.62);line-height:1.85;letter-spacing:.04em}
+  .meta b{color:#e9c87f;font-weight:600}
 
-  .tabs{display:flex;gap:0;margin-top:22px;border:2px solid var(--ink);background:var(--paper-2);box-shadow:var(--shadow)}
-  .tab{flex:1;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;letter-spacing:.1em;
-    text-transform:uppercase;background:transparent;color:var(--ink-soft);border:none;border-radius:0;
-    padding:15px 12px;cursor:pointer;transition:.15s;box-shadow:none}
-  .tab+.tab{border-left:2px solid var(--ink)}
-  .tab:active{transform:none}
-  .tab.active{background:var(--ink);color:var(--paper)}
-  .tab:not(.active):hover{background:rgba(28,26,23,.06)}
+  /* ---- Tab ---- */
+  .tabs{display:flex;gap:4px;margin-top:24px;flex-wrap:wrap;
+    background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:6px;box-shadow:var(--shadow-sm)}
+  .tab{flex:1;min-width:128px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11.5px;letter-spacing:.07em;
+    text-transform:uppercase;background:transparent;color:var(--ink-soft);border:none;border-radius:8px;
+    padding:12px 14px;cursor:pointer;transition:.18s;}
+  .tab:hover:not(.active){background:rgba(125,42,49,.06);color:var(--oxblood)}
+  .tab.active{background:var(--oxblood);color:#fdf3ee;box-shadow:0 7px 16px -7px rgba(125,42,49,.65)}
 
-  .grid{display:grid;grid-template-columns:1.25fr .9fr;gap:26px;margin-top:26px}
+  /* ---- Layout ---- */
+  .grid{display:grid;grid-template-columns:1.25fr .9fr;gap:24px;margin-top:24px}
   @media(max-width:880px){.grid{grid-template-columns:1fr}}
-  .panel{border:2px solid var(--ink);background:var(--paper-2);box-shadow:var(--shadow);}
-  .panel-h{border-bottom:2px solid var(--ink);padding:14px 22px;display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--paper);}
-  .panel-h .dot{width:9px;height:9px;border-radius:50%;background:var(--amber)}
-  .panel-h h2{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;}
+  .panel{border:1px solid var(--line);background:var(--paper-2);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .panel-h{padding:16px 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#fffdf9,#f6f0e6)}
+  .panel-h .dot{width:9px;height:9px;background:var(--oxblood);transform:rotate(45deg);box-shadow:0 0 0 3px rgba(125,42,49,.13)}
+  .panel-h h2{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
   .panel-b{padding:24px 22px}
 
-  /* ---- Dropzone MOD 4 ---- */
-  .drop{
-    border:2.5px dashed var(--oxblood);background:rgba(138,43,34,.04);border-radius:3px;
-    padding:24px 22px;text-align:center;cursor:pointer;transition:.18s;margin-bottom:24px;position:relative;
-  }
-  .drop:hover,.drop.over{background:rgba(138,43,34,.09);border-color:var(--oxblood-dk)}
+  /* ---- Dropzone ---- */
+  .drop{border:1.5px dashed var(--oxblood);background:rgba(125,42,49,.035);border-radius:10px;
+    padding:26px 22px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:24px}
+  .drop:hover,.drop.over{background:rgba(125,42,49,.08);border-color:var(--oxblood-dk);transform:translateY(-1px)}
   .drop .ico{color:var(--oxblood);margin-bottom:10px}
-  .drop h3{font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px}
-  .drop p{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
-  .drop b{color:var(--oxblood)}
+  .drop h3{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin-bottom:5px;color:var(--ink)}
+  .drop p{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+  .drop b{color:var(--oxblood);font-weight:600}
   .drop input{display:none}
-  .banner{display:none;margin-bottom:22px;border:2px solid var(--green);background:rgba(63,107,58,.07);
-    padding:14px 16px;font-size:13px;line-height:1.6;border-radius:3px;}
-  .banner.err{border-color:var(--oxblood);background:rgba(138,43,34,.07)}
+
+  .banner{display:none;margin-bottom:22px;border:1px solid var(--green);border-left:4px solid var(--green);
+    background:rgba(74,107,70,.07);padding:14px 16px;font-size:13px;line-height:1.6;border-radius:9px;color:#33502f}
+  .banner.err{border-color:var(--oxblood);border-left-color:var(--oxblood);background:rgba(125,42,49,.06);color:var(--oxblood-dk)}
   .banner b{font-family:'IBM Plex Mono',monospace}
   .capo-pick{display:none;margin-bottom:22px}
   .capo-pick label{font-size:12px;font-weight:600;color:var(--oxblood);letter-spacing:.04em;margin-bottom:6px;display:block}
 
-  fieldset{border:none;margin-bottom:22px}
-  legend{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.16em;
-    text-transform:uppercase;color:var(--oxblood);margin-bottom:14px;padding-bottom:6px;display:block;
-    width:100%;border-bottom:1.5px dashed var(--line-strong);}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+  fieldset{border:none;margin-bottom:24px}
+  legend{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--oxblood);margin-bottom:15px;padding-bottom:8px;display:block;width:100%;border-bottom:1px solid var(--line)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:15px 16px}
   @media(max-width:520px){.row{grid-template-columns:1fr}}
   .field{display:flex;flex-direction:column;gap:6px}
   .field.full{grid-column:1/-1}
   label{font-size:12px;font-weight:600;color:var(--ink-soft);letter-spacing:.01em}
   label .req{color:var(--oxblood)}
   .auto{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;
-    background:var(--amber);color:#fff;padding:1px 5px;border-radius:2px;letter-spacing:.05em;margin-left:6px;
-    vertical-align:middle;opacity:0;transition:.2s}
+    background:var(--amber);color:#fff;padding:1.5px 5px;border-radius:3px;letter-spacing:.05em;margin-left:6px;vertical-align:middle;opacity:0;transition:.2s}
   .auto.show{opacity:1}
   input,select,textarea{font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;color:var(--ink);
-    background:var(--paper);border:1.5px solid var(--line-strong);padding:10px 12px;outline:none;
-    transition:.15s;width:100%;border-radius:2px;}
-  input::placeholder,textarea::placeholder{color:#a8a193}
-  input:focus,select:focus,textarea:focus{border-color:var(--oxblood);background:#fff;box-shadow:0 0 0 3px rgba(138,43,34,.12);}
+    background:#fffdfa;border:1.5px solid var(--line-strong);padding:11px 13px;outline:none;transition:.15s;width:100%;border-radius:8px}
+  input::placeholder,textarea::placeholder{color:#b3aa9a}
+  input:focus,select:focus,textarea:focus{border-color:var(--oxblood);background:#fff;box-shadow:0 0 0 3.5px rgba(125,42,49,.13)}
   input.code{font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;font-weight:500}
-  input.filled,select.filled,textarea.filled{background:#fffdf4;border-color:var(--amber)}
-  textarea{resize:vertical;min-height:60px}
+  input.filled,select.filled,textarea.filled{background:#fffaef;border-color:var(--amber)}
+  textarea{resize:vertical;min-height:64px}
   select{cursor:pointer;appearance:none;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a554c' stroke-width='1.6' fill='none'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;}
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237d2a31' stroke-width='1.6' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
 
-  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
-  button{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:14px;cursor:pointer;
-    border:2px solid var(--ink);padding:12px 20px;border-radius:2px;transition:.12s;display:inline-flex;
-    align-items:center;gap:9px;letter-spacing:.01em;}
-  button:active{transform:translate(2px,2px)}
-  .btn-primary{background:var(--oxblood);color:#fff;border-color:var(--oxblood-dk);box-shadow:4px 4px 0 var(--ink)}
-  .btn-primary:hover{background:var(--oxblood-dk)}
-  .btn-primary:active{box-shadow:2px 2px 0 var(--ink)}
-  .btn-ghost{background:transparent;color:var(--ink)}
-  .btn-ghost:hover{background:var(--ink);color:var(--paper)}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+  button{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;border:1.5px solid transparent;
+    padding:12px 20px;border-radius:9px;transition:.16s;display:inline-flex;align-items:center;gap:9px;letter-spacing:.01em}
+  .btn-primary{background:var(--oxblood);color:#fdf3ee;box-shadow:0 8px 18px -8px rgba(125,42,49,.6);border-color:var(--oxblood-dk)}
+  .btn-primary:hover{background:var(--oxblood-dk);transform:translateY(-1px);box-shadow:0 13px 24px -8px rgba(125,42,49,.68)}
+  .btn-primary:active{transform:translateY(0)}
+  .btn-ghost{background:#fffdfa;color:var(--ink);border-color:var(--line-strong)}
+  .btn-ghost:hover{background:var(--ink);color:var(--paper-2);border-color:var(--ink)}
 
+  /* ---- Anteprima QR ---- */
   .qr-stage{display:flex;flex-direction:column;align-items:center}
-  .label-card{background:#fff;border:2px solid var(--ink);width:100%;max-width:340px;box-shadow:var(--shadow);}
-  .label-top{background:var(--ink);color:var(--paper);padding:10px 16px;display:flex;justify-content:space-between;
-    align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;}
+  .label-card{background:#fff;border:1px solid var(--line-strong);border-radius:11px;width:100%;max-width:340px;box-shadow:var(--shadow);overflow:hidden}
+  .label-top{background:linear-gradient(135deg,#2a2320,#61202a);color:#f3ebe0;padding:11px 16px;display:flex;justify-content:space-between;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em}
   .label-body{padding:22px 18px 18px;text-align:center}
-  #qrcode{display:inline-block;padding:10px;background:#fff;border:1.5px solid var(--line)}
+  #qrcode{display:inline-block;padding:10px;background:#fff;border:1px solid var(--line);border-radius:6px}
   #qrcode img,#qrcode canvas{display:block;margin:0 auto}
-  .label-id{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:18px;letter-spacing:.06em;margin-top:14px;word-break:break-all;}
+  .label-id{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:18px;letter-spacing:.06em;margin-top:14px;word-break:break-all}
   .label-sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px;font-weight:500}
-  .label-foot{border-top:1.5px dashed var(--line-strong);margin-top:14px;padding-top:10px;font-size:10px;
-    color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;}
-  .placeholder{text-align:center;color:var(--ink-soft);padding:50px 20px;border:2px dashed var(--line-strong);
-    width:100%;max-width:340px;background:var(--paper);}
-  .placeholder svg{opacity:.4;margin-bottom:14px}
+  .label-foot{border-top:1px dashed var(--line-strong);margin-top:14px;padding-top:10px;font-size:10px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em}
+  .placeholder{text-align:center;color:var(--ink-soft);padding:54px 20px;border:1.5px dashed var(--line-strong);border-radius:11px;width:100%;max-width:340px;background:var(--paper)}
+  .placeholder svg{opacity:.35;margin-bottom:14px}
   .placeholder p{font-size:13.5px;line-height:1.5}
-  .hint{font-size:11.5px;color:var(--ink-soft);margin-top:18px;line-height:1.6;font-family:'IBM Plex Mono',monospace;text-align:center;max-width:340px;}
+  .hint{font-size:11.5px;color:var(--ink-soft);margin-top:18px;line-height:1.6;font-family:'IBM Plex Mono',monospace;text-align:center;max-width:340px}
   .cap-bar{height:6px;background:var(--line);margin-top:6px;border-radius:3px;overflow:hidden}
   .cap-fill{height:100%;width:0;background:var(--green);transition:.3s}
 
   @media print{
     body{background:#fff;padding:0}
+    body::before{display:none}
     .wrap>*:not(#printArea){display:none!important}
     #printArea{display:block!important;position:static}
     .label-card{box-shadow:none;margin:0 auto}
@@ -2487,8 +2498,7 @@ var qrcode = function() {
 
   <nav class="tabs">
     <button class="tab active" id="tab-gen" onclick="vista('gen')">Generatore QR</button>
-    <button class="tab" id="tab-lotto" onclick="vista('lotto')">Lotto QR</button>
-    <button class="tab" id="tab-archivio" onclick="vista('archivio')">Archivio capi</button>
+    <button class="tab" id="tab-archivio" onclick="vista('archivio')">Archivio MOD 4</button>
     <button class="tab" id="tab-clienti" onclick="vista('clienti')">Clienti</button>
     <button class="tab" id="tab-set" onclick="vista('set')">La mia attività</button>
   </nav>
@@ -2755,18 +2765,7 @@ var qrcode = function() {
   </div>
   <div id="view-archivio" style="display:none">
     <section class="panel">
-      <div class="panel-h"><span class="dot"></span><h2>Archivio capi</h2></div>
-      <div class="panel-b">
-        <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px">Tutti i capi salvati. Cerca, ristampa l'etichetta o elimina.</p>
-        <div class="field" style="margin-bottom:18px">
-          <input type="text" id="arch_search" placeholder="Cerca per marca auricolare, razza o lotto…" oninput="renderArchivio()">
-        </div>
-        <div id="archivioLista" style="display:flex;flex-direction:column;gap:10px"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
-      </div>
-    </section>
-  <div id="view-lotto" style="display:none">
-    <section class="panel">
-      <div class="panel-h"><span class="dot"></span><h2>Lotto QR · più MOD 4 insieme</h2></div>
+      <div class="panel-h"><span class="dot"></span><h2>Archivio MOD 4</h2></div>
       <div class="panel-b">
         <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px">Carica uno o più PDF MOD 4: l'app estrae tutti i capi in una lista. Correggi e completa i dati mancanti (data macellazione, peso, lotto, cliente…), seleziona quelli da stampare e scaricali tutti insieme come immagini (ZIP) o come unico PDF.</p>
         <div class="actions" style="flex-wrap:wrap;gap:10px">
@@ -2785,6 +2784,15 @@ var qrcode = function() {
           <button class="btn-ghost" onclick="scaricaZip()">🗜️ Scarica ZIP (immagini)</button>
           <button class="btn-ghost" onclick="scaricaPdf()">📄 Scarica PDF unico</button>
         </div>
+
+        <fieldset style="margin-top:30px">
+          <legend>Capi salvati nell'archivio</legend>
+          <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:6px 0 14px">I capi salvati dal Generatore con "Salva nell'archivio". Cerca, ristampa l'etichetta o elimina.</p>
+          <div class="field" style="margin-bottom:16px">
+            <input type="text" id="arch_search" placeholder="Cerca per marca auricolare, razza o lotto…" oninput="renderArchivio()">
+          </div>
+          <div id="archivioLista" style="display:flex;flex-direction:column;gap:10px"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
+        </fieldset>
       </div>
     </section>
   </div>
@@ -2807,10 +2815,9 @@ var qrcode = function() {
 
   /* ---------------- Pagine / navigazione ---------------- */
   function vista(v){
-    ['gen','lotto','archivio','set','clienti'].forEach(x=>{ const el=$('view-'+x); if(el) el.style.display=(x===v?'block':'none'); const t=$('tab-'+x); if(t) t.classList.toggle('active', x===v); });
+    ['gen','archivio','set','clienti'].forEach(x=>{ const el=$('view-'+x); if(el) el.style.display=(x===v?'block':'none'); const t=$('tab-'+x); if(t) t.classList.toggle('active', x===v); });
     if(v==='clienti') caricaClienti();
-    if(v==='archivio') caricaArchivio();
-    if(v==='lotto'){ caricaClienti(); renderBatch(); }
+    if(v==='archivio'){ caricaClienti(); renderBatch(); caricaArchivio(); }
     window.scrollTo(0,0);
   }
 
