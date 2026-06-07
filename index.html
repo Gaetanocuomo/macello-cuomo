@@ -3135,9 +3135,15 @@ var qrcode = function() {
   async function caricaClienti(){
     if(!sb){ $('clientiLista').innerHTML='<p style="color:var(--ink-soft);font-size:13px">Manca la connessione a internet.</p>'; return; }
     try{
-      const {data,error}=await sb.from('clienti').select('*').order('nome');
-      if(error) throw error;
-      clientiCache=data||[]; renderClienti(); popolaTendinaClienti(); popolaFiltroClienti(); popolaDatalistClienti(); popolaFiltriClienti();
+      let all=[], from=0; const size=1000;
+      while(true){
+        const {data,error}=await sb.from('clienti').select('*').order('nome').range(from, from+size-1);
+        if(error) throw error;
+        all=all.concat(data||[]);
+        if(!data || data.length<size) break;
+        from+=size;
+      }
+      clientiCache=all; renderClienti(); popolaTendinaClienti(); popolaFiltroClienti(); popolaDatalistClienti(); popolaFiltriClienti();
     }catch(e){ $('clientiLista').innerHTML='<p class="banner err" style="display:block">Errore: '+esc(e.message||e)+'</p>'; }
   }
   let editCliente=null, cliSel=new Set(), cliVisibleIds=[];
@@ -3336,8 +3342,15 @@ var qrcode = function() {
   async function caricaArchivio(){
     if(!sb){ $('archivioLista').innerHTML='<p style="color:var(--ink-soft);font-size:13px">Manca la connessione a internet.</p>'; return; }
     try{
-      const {data,error}=await sb.from('capi').select('*').order('created_at',{ascending:false}).limit(300);
-      if(error) throw error; archivioCache=data||[]; renderArchivio();
+      let all=[], from=0; const size=1000;
+      while(true){
+        const {data,error}=await sb.from('capi').select('*').order('created_at',{ascending:false}).range(from, from+size-1);
+        if(error) throw error;
+        all=all.concat(data||[]);
+        if(!data || data.length<size) break;
+        from+=size;
+      }
+      archivioCache=all; renderArchivio();
     }catch(e){ $('archivioLista').innerHTML='<p class="banner err" style="display:block">Errore: '+esc(e.message||e)+'</p>'; }
   }
   function val(id){ const e=$(id); return e?e.value:''; }
