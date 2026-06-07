@@ -4038,6 +4038,7 @@ var qrcode = function() {
     contatti:true, istruzione:true, istrTxt:'INQUADRA CON LA FOTOCAMERA DEL TELEFONO',
     etlW:100, etlH:70, etlM:3 };
   let stampaCfg=Object.assign({}, STAMPA_DEFAULT);
+  let _labelBig=false;
   const ST_CHK=['logo','nome','indirizzo','cittaBollo','barra','marca','cliente','reg','f_specie','f_razza','f_sesso','f_paese','f_allev','f_stalla','f_macello','f_datamac','f_lotto','contatti','istruzione'];
   function setStampaBanner(html,err){ const b=$('stampaBanner'); if(!b) return; b.innerHTML=html; b.className='banner'+(err?' err':''); b.style.display='block'; }
   function caricaStampaCfg(){ try{ const raw=localStorage.getItem('stampaCfg_v1'); if(raw){ stampaCfg=Object.assign({}, STAMPA_DEFAULT, JSON.parse(raw)); } }catch(e){} }
@@ -4093,7 +4094,7 @@ var qrcode = function() {
     s.textContent='@page{ size:'+W+'mm '+H+'mm; margin:'+Mg+'mm } '
       +'@media print{ '
       +'  body>*:not(#printArea){display:none!important} '
-      +'  #printArea{display:flex!important;align-items:center;justify-content:center;width:'+iw+'mm!important;height:'+ih+'mm!important;margin:0!important;padding:0!important} '
+      +'  #printArea{position:fixed!important;inset:0!important;display:flex!important;align-items:center;justify-content:center;margin:0!important;padding:0!important} '
       +'  #printArea div{width:100%!important;height:100%!important;display:flex!important;align-items:center;justify-content:center} '
       +'  #printArea img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;margin:0!important} '
       +'}';
@@ -4110,7 +4111,8 @@ var qrcode = function() {
         macello:(settings.bollo||'1429M'), data_macellazione:'2026-06-01', peso:'320', lotto:'001', note:'', cliente_id:'' });
     }
     if(costruisciQR()===null){ setStampaBanner('Impossibile generare l\'anteprima.',true); return; }
-    const cv=makeLabelCanvas(); if(!cv){ setStampaBanner('Impossibile generare l\'anteprima.',true); return; }
+    _labelBig=true; const cv=makeLabelCanvas(); _labelBig=false;
+    if(!cv){ setStampaBanner('Impossibile generare l\'anteprima.',true); return; }
     $('printArea').innerHTML='<div style="text-align:center"><img src="'+cv.toDataURL('image/png')+'"></div>';
     stampaSuEtichetta();
   }
@@ -4118,7 +4120,8 @@ var qrcode = function() {
   function makeLabelCanvas(){
     if(!lastQR) return null;
     const cfg=stampaCfg;
-    const W=720, M=46, padTop=36, qrBox=300, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
+    const W=720, M=46, padTop=36, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
+    const qrBox=_labelBig?460:300;
     const count=lastQR.getModuleCount(), total=count+8, cell=Math.max(1,Math.floor(qrBox/total)), qrPx=cell*total;
     const meas=document.createElement('canvas').getContext('2d');
 
@@ -4266,7 +4269,9 @@ var qrcode = function() {
         try{ window.print(); }catch(e){ alert('Per stampare, apri il file scaricato nel tuo browser.'); }
       };
       $('ovPrintEtl').onclick=()=>{
-        $('printArea').innerHTML=`<div style="text-align:center"><img src="${$('ovImg').src}"></div>`;
+        _labelBig=true; const cv=makeLabelCanvas(); _labelBig=false;
+        const src=cv?cv.toDataURL('image/png'):$('ovImg').src;
+        $('printArea').innerHTML=`<div style="text-align:center"><img src="${src}"></div>`;
         stampaSuEtichetta();
       };
     }
