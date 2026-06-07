@@ -2533,6 +2533,15 @@ var qrcode = function() {
   .dt-topscroll-inner{height:1px}
   .dt{border-collapse:collapse;width:100%;font-size:12px;white-space:normal;table-layout:auto}
   .dt td,.dt th{overflow-wrap:anywhere;word-break:break-word}
+  .dt-arch{white-space:nowrap;font-size:12.5px}
+  .dt-arch td,.dt-arch th{overflow-wrap:normal;word-break:normal}
+  .dt-arch td.allev{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dt-arch .actcell{flex-wrap:wrap}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}
+  .drow{display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding-bottom:7px}
+  .dk{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  .dv{font-size:14px;color:var(--ink);word-break:break-word}
+  @media(max-width:560px){.dgrid{grid-template-columns:1fr}}
   .dt th{position:sticky;top:0;z-index:2;background:#2a2320;color:#f3ebe0;font-family:'IBM Plex Mono',monospace;font-size:10px;
     letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:11px 13px;text-align:left;cursor:pointer;user-select:none;white-space:nowrap}
   .dt th:hover{background:#3a2f29}
@@ -2963,6 +2972,17 @@ var qrcode = function() {
         </div>
       </div>
     </div>
+
+    <div id="capoModal" class="modal" style="display:none" onclick="if(event.target===this) chiudiModalCapo()">
+      <div class="modal-card">
+        <div class="modal-h"><span>Scheda capo</span><span class="modal-x" onclick="chiudiModalCapo()">×</span></div>
+        <div class="modal-b" id="capoModalBody"></div>
+        <div class="modal-f">
+          <button class="btn-primary" id="btnEtichettaCapo">🖨️ Genera / stampa etichetta</button>
+          <button class="btn-ghost" onclick="chiudiModalCapo()">Chiudi</button>
+        </div>
+      </div>
+    </div>
   </div>
   <div id="view-archivio" style="display:none">
     <section class="panel">
@@ -3328,6 +3348,11 @@ var qrcode = function() {
     {l:'Peso',k:'peso'},{l:'Lotto',k:'lotto'},{l:'Cliente',k:'_cliente'},{l:'Note',k:'note'}
   ];
   const ARCH_MONO=new Set(['marca_auricolare','codice_elettronico','codice_stalla','doc_accompagnamento','macello']);
+  const ARCH_COLS_VIS=[
+    {l:'Marca auricolare',k:'marca_auricolare'},{l:'Specie',k:'specie'},{l:'Razza',k:'razza'},
+    {l:'Sesso',k:'sesso'},{l:'Nascita',k:'data_nascita'},{l:'Paese',k:'paese_nascita'},
+    {l:'Allevamento',k:'allevamento'},{l:'Cod. stalla',k:'codice_stalla'}
+  ];
   let archSel=new Set(), archVisibleIds=[];
   function renderArchivio(){
     const box=$('archivioLista'); if(!box) return;
@@ -3356,23 +3381,34 @@ var qrcode = function() {
       +'<button class="btn-ghost mini" onclick="deselezionaArch()">Deseleziona tutto</button></div>';
     const allChecked=archVisibleIds.length>0 && archVisibleIds.every(id=>archSel.has(id));
     const arrow=k=> archSort.key===k ? '<span class="ar">'+(archSort.dir>0?'▲':'▼')+'</span>' : '';
-    const thead='<tr><th class="selcell" style="cursor:default"><input type="checkbox" id="archSelAll" onclick="toggleArchSelAll(this)" '+(allChecked?'checked':'')+'></th>'+ARCH_COLS.map(c=>'<th onclick="ordinaArchivio(\''+c.k+'\')">'+c.l+arrow(c.k)+'</th>').join('')+'<th style="cursor:default">Azioni</th></tr>';
+    const thead='<tr><th class="selcell" style="cursor:default"><input type="checkbox" id="archSelAll" onclick="toggleArchSelAll(this)" '+(allChecked?'checked':'')+'></th>'+ARCH_COLS_VIS.map(c=>'<th onclick="ordinaArchivio(\''+c.k+'\')">'+c.l+arrow(c.k)+'</th>').join('')+'<th style="cursor:default">Azioni</th></tr>';
     const fmt=(c,k)=> (k==='data_nascita'||k==='data_macellazione')?fdIso(c[k]) : (k==='_cliente'?clienteName(c.cliente_id):c[k]);
     const rows=list.map(c=>{ const i=archivioCache.indexOf(c);
-      const tds=ARCH_COLS.map(col=>{ let attr=''; if(ARCH_MONO.has(col.k)) attr=' class="mono"'; if(col.k==='marca_auricolare') attr=' class="mono" style="font-weight:600"';
+      const tds=ARCH_COLS_VIS.map(col=>{ let attr=''; if(ARCH_MONO.has(col.k)) attr=' class="mono"'; if(col.k==='marca_auricolare') attr=' class="mono" style="font-weight:600"'; if(col.k==='allevamento') attr=' class="allev"';
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
-      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
+      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-ghost mini" title="Vedi tutti i dati" onclick="dettagliCapo(\''+c.id+'\')">🔍 Dettagli</button><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
     }).join('');
-    box.innerHTML=bulk+'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollArch(-1)">◀</button><button type="button" title="Verso destra" onclick="scrollArch(1)">▶</button><input type="range" class="scrollrange" id="archRange" min="0" max="1000" value="0" title="Trascina per scorrere la tabella"></div><div class="dt-topscroll" id="archTopScroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap" id="archWrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
-    const ts=$('archTopScroll'), tsi=ts.firstElementChild, wrap=$('archWrap'), tbl=wrap.querySelector('table');
-    const sync=()=>{ tsi.style.width=Math.max(wrap.scrollWidth, tbl.scrollWidth)+'px'; };
-    sync(); requestAnimationFrame(sync); setTimeout(sync,200); setTimeout(sync,500);
-    let lock=false;
-    ts.onscroll=()=>{ if(lock)return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; };
-    wrap.onscroll=()=>{ if(lock)return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; };
-    setupDragScroll(wrap); bindRange(wrap, $('archRange'));
+    box.innerHTML=bulk+'<div class="dt-wrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
   }
   function scrollArch(dir){ scrollWrapById('archWrap', dir); }
+  function chiudiModalCapo(){ const m=$('capoModal'); if(m) m.style.display='none'; }
+  function dettagliCapo(id){
+    const c=archivioCache.find(x=>x.id===id); if(!c) return;
+    const i=archivioCache.indexOf(c);
+    const F=k=> (k==='data_nascita'||k==='data_macellazione')?fdIso(c[k]):c[k];
+    const rows=[
+      ['Marca auricolare',c.marca_auricolare],['Codice elettronico',c.codice_elettronico],
+      ['Specie',c.specie],['Razza',c.razza],['Sesso',c.sesso],
+      ['Data di nascita',F('data_nascita')],['Paese di nascita',c.paese_nascita],
+      ['Allevamento',c.allevamento],['Codice stalla',c.codice_stalla],
+      ['ASL',c.asl],['Stato sanitario',c.stato_sanitario],['Doc. MOD 4',c.doc_accompagnamento],
+      ['Macello CE',c.macello],['Data macellazione',F('data_macellazione')],
+      ['Peso',c.peso],['Lotto',c.lotto],['Cliente',clienteName(c.cliente_id)],['Note',c.note]
+    ];
+    $('capoModalBody').innerHTML='<div class="dgrid">'+rows.map(r=>'<div class="drow"><span class="dk">'+esc(r[0])+'</span><span class="dv">'+(r[1]?esc(String(r[1])):'—')+'</span></div>').join('')+'</div>';
+    const btn=$('btnEtichettaCapo'); if(btn) btn.onclick=()=>{ chiudiModalCapo(); etichettaArchivio(i); };
+    $('capoModal').style.display='flex';
+  }
   // ---- Scorrimento orizzontale riutilizzabile per qualsiasi tabella ----
   function scrollWrapById(id, dir){
     const w=$(id); if(!w) return;
