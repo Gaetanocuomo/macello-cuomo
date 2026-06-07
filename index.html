@@ -2601,8 +2601,8 @@ var qrcode = function() {
     html,body{background:#fff;padding:0;margin:0}
     body::before{display:none}
     body>*:not(#printArea){display:none!important}
-    #printArea{display:block!important;position:static}
-    #printArea img{max-width:100%;max-height:23cm;width:auto;height:auto;display:block;margin:0 auto}
+    #printArea{display:block!important;position:static;width:19.8cm;height:24cm}
+    #printArea img{width:100%;height:100%;object-fit:contain;object-position:top center;display:block}
     .label-card{box-shadow:none;margin:0 auto}
   }
   #printArea{display:none}
@@ -4119,8 +4119,10 @@ var qrcode = function() {
     const footBlock=6+22+contactsH+(hasIstr?26:6);
 
     const H=baseTop+padTop+qrPx+gapQR+marcaBlockH+listH+footBlock;
-    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const SCALE=4;                                   // alta risoluzione: testo nitido in stampa
+    const c=document.createElement('canvas'); c.width=W*SCALE; c.height=H*SCALE;
     const ctx=c.getContext('2d');
+    ctx.scale(SCALE,SCALE);
     ctx.fillStyle='#fbfaf6'; ctx.fillRect(0,0,W,H);
 
     // intestazione attività
