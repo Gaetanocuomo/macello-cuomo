@@ -2506,9 +2506,9 @@ var qrcode = function() {
     .navitem{white-space:nowrap;padding:9px 12px;font-size:12.5px}
     .side-foot{display:none}
     .main{padding:22px 18px 60px}
-    .dt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-    .dt{white-space:nowrap}
-    .dt td,.dt th{overflow-wrap:normal;word-break:normal}
+    .dt-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;cursor:auto!important}
+    .dt{white-space:nowrap!important;table-layout:auto!important}
+    .dt td,.dt th{overflow-wrap:normal!important;word-break:normal!important}
     .dt-arch td.allev{max-width:none}
   }
 
@@ -2541,6 +2541,10 @@ var qrcode = function() {
   .dt-arch td,.dt-arch th{overflow-wrap:normal;word-break:normal}
   .dt-arch td.allev{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dt-arch .actcell{flex-wrap:wrap}
+  .iconbtn{padding:6px 9px!important;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+  .iconbtn svg{display:block}
+  .btn-del{color:#c0392b!important;border-color:#e3c2bd!important}
+  .btn-del:hover{background:#fbecea!important;border-color:#c0392b!important}
   .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}
   .drow{display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding-bottom:7px}
   .dk{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
@@ -3187,7 +3191,6 @@ var qrcode = function() {
       +'<p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px">Usa i filtri qui sopra per restringere i risultati. <span class="mobile-only" style="color:var(--oxblood);font-weight:600">👉 Su telefono scorri la tabella con il dito per vedere tutte le colonne.</span></p>'
       +'<div class="scrollnav"><span>Scorri la tabella:</span><button type="button" title="Verso sinistra" onclick="scrollWrapById(\'cliWrap\',-1)">◀</button><button type="button" title="Verso destra" onclick="scrollWrapById(\'cliWrap\',1)">▶</button><input type="range" class="scrollrange" id="cliRange" min="0" max="1000" value="0" title="Trascina per scorrere la tabella"></div>'
       +'<div class="dt-wrap" id="cliWrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
-    setupDragScroll($('cliWrap')); bindRange($('cliWrap'), $('cliRange'));
   }
   function aggiornaCliBulk(){
     const bar=$('cliBulk'); if(bar) bar.style.display=cliSel.size?'flex':'none';
@@ -3392,7 +3395,7 @@ var qrcode = function() {
     const rows=list.map(c=>{ const i=archivioCache.indexOf(c);
       const tds=ARCH_COLS_VIS.map(col=>{ let attr=''; if(ARCH_MONO.has(col.k)) attr=' class="mono"'; if(col.k==='marca_auricolare') attr=' class="mono" style="font-weight:600"'; if(col.k==='allevamento') attr=' class="allev"';
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
-      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-ghost mini" title="Vedi tutti i dati" onclick="dettagliCapo(\''+c.id+'\')">🔍 Dettagli</button><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
+      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-ghost mini iconbtn" title="Dettagli — vedi tutti i dati" onclick="dettagliCapo(\''+c.id+'\')">🔍</button><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini iconbtn btn-del" title="Elimina" onclick="eliminaCapo(\''+c.id+'\')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button></div></td></tr>';
     }).join('');
     box.innerHTML=bulk+'<div class="dt-wrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
   }
