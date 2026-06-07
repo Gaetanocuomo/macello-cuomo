@@ -4065,7 +4065,8 @@ var qrcode = function() {
   function makeLabelCanvas(){
     if(!lastQR) return null;
     const cfg=stampaCfg;
-    const W=720, M=46, padTop=36, qrBox=340, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
+    const W=720, M=46, padTop=36, qrBox=240, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
+    const TOP_CM=5, MTOP=Math.round(W/21*TOP_CM);   // 5 cm di margine in alto (carta intestata)
     const count=lastQR.getModuleCount(), total=count+8, cell=Math.max(1,Math.floor(qrBox/total)), qrPx=cell*total;
     const meas=document.createElement('canvas').getContext('2d');
 
@@ -4118,8 +4119,9 @@ var qrcode = function() {
     const footBlock=6+22+contactsH+(hasIstr?26:6);
 
     const H=baseTop+padTop+qrPx+gapQR+marcaBlockH+listH+footBlock;
-    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const c=document.createElement('canvas'); c.width=W; c.height=H+MTOP;
     const ctx=c.getContext('2d');
+    ctx.translate(0,MTOP);                 // i primi 5 cm restano vuoti (trasparenti)
     ctx.fillStyle='#fbfaf6'; ctx.fillRect(0,0,W,H);
 
     // intestazione attività
