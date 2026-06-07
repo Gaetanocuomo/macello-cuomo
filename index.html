@@ -2508,11 +2508,19 @@ var qrcode = function() {
   }
 
   /* ---- Filtri archivio ---- */
-  .filterbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px;
+  .filterbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;gap:12px 14px;margin-bottom:14px;
     background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
-  .filterbar .fc{display:flex;flex-direction:column;gap:5px}
+  .filterbar .fc{display:flex;flex-direction:column;gap:5px;min-width:0}
   .filterbar .fc-lab{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
-  .filterbar input,.filterbar select{padding:8px 11px;font-size:13px;min-width:130px}
+  .filterbar input,.filterbar select{padding:8px 11px;font-size:13px;width:100%}
+
+  /* ---- Barra di scorrimento sopra la tabella ---- */
+  .dt-topscroll{overflow-x:auto;overflow-y:hidden;height:17px;margin-bottom:7px;border:1px solid var(--line);border-radius:8px;background:var(--paper-2);scrollbar-color:#b9a98c #efe7d8}
+  .dt-topscroll-inner{height:1px}
+  .dt-topscroll::-webkit-scrollbar{height:15px}
+  .dt-topscroll::-webkit-scrollbar-track{background:#efe7d8;border-radius:8px}
+  .dt-topscroll::-webkit-scrollbar-thumb{background:#b9a98c;border-radius:8px;border:3px solid #efe7d8}
+  .dt-topscroll::-webkit-scrollbar-thumb:hover{background:#8a7f6e}
 
   /* ---- Tabella dati MOD 4 ---- */
   .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-color:#b9a98c #efe7d8;scrollbar-width:auto}
@@ -2935,16 +2943,16 @@ var qrcode = function() {
           <legend>Capi salvati nell'archivio</legend>
           <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:6px 0 14px">I capi salvati dal Generatore con "Salva nell'archivio". Cerca, ristampa l'etichetta o elimina.</p>
           <div class="filterbar">
-            <div class="fc" style="flex:1;min-width:190px"><span class="fc-lab">Ricerca libera</span><input type="text" id="arch_search" placeholder="Marca, razza, lotto, allevamento…" oninput="renderArchivio()"></div>
+            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca libera</span><input type="text" id="arch_search" placeholder="Marca, razza, lotto, allevamento…" oninput="renderArchivio()"></div>
             <div class="fc"><span class="fc-lab">Specie</span><select id="arch_specie" onchange="renderArchivio()"><option value="">Tutte</option><option>Bovino</option><option>Bufalino</option><option>Suino</option><option>Ovino</option><option>Caprino</option><option>Equino</option></select></div>
             <div class="fc"><span class="fc-lab">Sesso</span><select id="arch_sesso" onchange="renderArchivio()"><option value="">Tutti</option><option>Maschio</option><option>Femmina</option></select></div>
             <div class="fc"><span class="fc-lab">Cliente</span><select id="arch_cliente" onchange="renderArchivio()"><option value="">Tutti i clienti</option></select></div>
             <div class="fc"><span class="fc-lab">Macell. dal</span><input type="date" id="arch_dal" onchange="renderArchivio()"></div>
             <div class="fc"><span class="fc-lab">al</span><input type="date" id="arch_al" onchange="renderArchivio()"></div>
-            <button class="btn-ghost" onclick="azzeraFiltri()" style="padding:9px 16px">Azzera filtri</button>
+            <button class="btn-ghost" onclick="azzeraFiltri()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera filtri</button>
           </div>
           <p id="archConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 6px"></p>
-          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne: <b>trascina la barra di scorrimento in basso</b> (o usa Shift + rotellina del mouse) per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note.</p>
+          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne: usa la <b>barra di scorrimento qui sopra la tabella</b> (o Shift + rotellina del mouse) per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note.</p>
           <div id="archivioLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
         </fieldset>
       </div>
@@ -3197,7 +3205,13 @@ var qrcode = function() {
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
       return '<tr>'+tds+'<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
     }).join('');
-    box.innerHTML='<div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+    box.innerHTML='<div class="dt-topscroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+    const ts=box.querySelector('.dt-topscroll'), tsi=box.querySelector('.dt-topscroll-inner'), wrap=box.querySelector('.dt-wrap'), tbl=wrap.querySelector('table');
+    const syncTop=()=>{ tsi.style.width=tbl.scrollWidth+'px'; };
+    syncTop(); requestAnimationFrame(syncTop); setTimeout(syncTop,200);
+    let lock=false;
+    ts.addEventListener('scroll',()=>{ if(lock) return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; });
+    wrap.addEventListener('scroll',()=>{ if(lock) return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; });
   }
   async function eliminaCapo(id){
     if(!confirm('Eliminare questo capo dall\'archivio?')) return; if(!sb) return;
