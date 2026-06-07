@@ -2844,7 +2844,8 @@ var qrcode = function() {
         <p id="lottoConteggio" style="font-size:13px;color:var(--ink-soft);margin:14px 0 6px;font-weight:600"></p>
         <div id="lottoLista" style="display:flex;flex-direction:column;gap:14px"></div>
         <div class="actions" id="lottoExport" style="display:none;flex-wrap:wrap;gap:10px;margin-top:22px;border-top:2px solid var(--line-strong);padding-top:20px">
-          <button class="btn-primary" onclick="stampaSelezionati()" style="box-shadow:4px 4px 0 var(--ink)">🖨️ Stampa selezionati</button>
+          <button class="btn-primary" onclick="salvaLottoArchivio()">💾 Salva nell'archivio</button>
+          <button class="btn-ghost" onclick="stampaSelezionati()">🖨️ Stampa selezionati</button>
           <button class="btn-ghost" onclick="scaricaZip()">🗜️ Scarica ZIP (immagini)</button>
           <button class="btn-ghost" onclick="scaricaPdf()">📄 Scarica PDF unico</button>
         </div>
@@ -3233,6 +3234,29 @@ var qrcode = function() {
       doc.addImage(cv.toDataURL('image/png'),'PNG',0,0,w,h); n++; }
     if(doc){ doc.save('etichette_qr.pdf'); lottoBanner('✓ PDF scaricato ('+n+' etichette).'); }
     else lottoBanner('Nessuna etichetta generata.',true);
+  }
+
+  async function salvaLottoArchivio(){
+    if(!sb){ lottoBanner('Manca la connessione a internet.',true); return; }
+    const sel=batch.filter(e=>e._sel);
+    if(!sel.length){ lottoBanner('Seleziona almeno un capo da salvare.',true); return; }
+    lottoBanner('Salvataggio di '+sel.length+' capi nell\'archivio…');
+    const recs=sel.map(e=>{ fillFormFromCapo(e); const qr=buildText();
+      return {
+        marca_auricolare:(e.marca_auricolare||'').trim(), codice_elettronico:(e.codice_elettronico||'').trim(),
+        specie:e.specie||'', razza:e.razza||'', sesso:e.sesso||'',
+        data_nascita:e.data_nascita||null, paese_nascita:e.paese_nascita||'',
+        allevamento:e.allevamento||'', codice_stalla:e.codice_stalla||'', asl:e.asl||'',
+        stato_sanitario:e.stato_sanitario||'', doc_accompagnamento:e.doc_accompagnamento||'',
+        macello:e.macello||'', data_macellazione:e.data_macellazione||null,
+        peso:e.peso||'', lotto:e.lotto||'', note:e.note||'',
+        cliente_id:e.cliente_id||null, qr_text:qr
+      };
+    });
+    try{ const {error}=await sb.from('capi').insert(recs); if(error) throw error;
+      lottoBanner('✓ '+recs.length+' capi salvati nell\'archivio. Li trovi nella tabella qui sotto.');
+      caricaArchivio();
+    }catch(err){ lottoBanner('Errore nel salvataggio: '+esc(err.message||err), true); }
   }
 
   // avvio: carico i dati dal cloud
