@@ -4067,7 +4067,7 @@ var qrcode = function() {
   function makeLabelCanvas(){
     if(!lastQR) return null;
     const cfg=stampaCfg;
-    const W=720, M=46, padTop=36, qrBox=240, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
+    const W=720, M=46, padTop=36, qrBox=300, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
     const count=lastQR.getModuleCount(), total=count+8, cell=Math.max(1,Math.floor(qrBox/total)), qrPx=cell*total;
     const meas=document.createElement('canvas').getContext('2d');
 
