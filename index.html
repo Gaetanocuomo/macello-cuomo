@@ -2551,6 +2551,11 @@ var qrcode = function() {
   .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}
   .editgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
   @media(max-width:560px){.editgrid{grid-template-columns:1fr}}
+  .pager{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0;font-size:12.5px}
+  .pager .pbtn{padding:7px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper-2);color:var(--ink);cursor:pointer;font-weight:600;font-size:12.5px}
+  .pager .pbtn:hover:not([disabled]){background:var(--oxblood);color:#fff;border-color:var(--oxblood)}
+  .pager .pbtn[disabled]{opacity:.4;cursor:default}
+  .pager .pinfo{color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;padding:0 4px}
   .drow{display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding-bottom:7px}
   .dk{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
   .dv{font-size:14px;color:var(--ink);word-break:break-word}
@@ -2951,10 +2956,10 @@ var qrcode = function() {
         <fieldset style="margin-top:8px">
           <legend>Elenco clienti</legend>
           <div class="filterbar">
-            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca</span><input type="text" id="cli_search" placeholder="Nome, indirizzo, comune, provincia, P.IVA, C.F., telefono, email…" oninput="renderClienti()" style="max-width:560px"></div>
-            <div class="fc"><span class="fc-lab">Provincia</span><select id="cli_prov" onchange="renderClienti()"><option value="">Tutte</option></select></div>
-            <div class="fc"><span class="fc-lab">Località / Comune</span><select id="cli_loc" onchange="renderClienti()"><option value="">Tutte</option></select></div>
-            <div class="fc"><span class="fc-lab">Dati presenti</span><select id="cli_flag" onchange="renderClienti()"><option value="">Tutti</option><option value="piva">Con Partita IVA</option><option value="cf">Con Cod. Fiscale</option><option value="email">Con email</option><option value="tel">Con telefono</option></select></div>
+            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca</span><input type="text" id="cli_search" placeholder="Nome, indirizzo, comune, provincia, P.IVA, C.F., telefono, email…" oninput="filtraCli()" style="max-width:560px"></div>
+            <div class="fc"><span class="fc-lab">Provincia</span><select id="cli_prov" onchange="filtraCli()"><option value="">Tutte</option></select></div>
+            <div class="fc"><span class="fc-lab">Località / Comune</span><select id="cli_loc" onchange="filtraCli()"><option value="">Tutte</option></select></div>
+            <div class="fc"><span class="fc-lab">Dati presenti</span><select id="cli_flag" onchange="filtraCli()"><option value="">Tutti</option><option value="piva">Con Partita IVA</option><option value="cf">Con Cod. Fiscale</option><option value="email">Con email</option><option value="tel">Con telefono</option></select></div>
             <button class="btn-ghost" onclick="azzeraFiltriClienti()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera filtri</button>
           </div>
           <p id="cliConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 12px"></p>
@@ -3016,12 +3021,12 @@ var qrcode = function() {
           <legend>Capi salvati nell'archivio</legend>
           <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:6px 0 14px">I capi salvati dal Generatore con "Salva nell'archivio". Cerca, ristampa l'etichetta o elimina.</p>
           <div class="filterbar">
-            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca libera</span><input type="text" id="arch_search" placeholder="Marca, razza, lotto, allevamento…" oninput="renderArchivio()" style="max-width:520px"></div>
-            <div class="fc"><span class="fc-lab">Specie</span><select id="arch_specie" onchange="renderArchivio()"><option value="">Tutte</option><option>Bovino</option><option>Bufalino</option><option>Suino</option><option>Ovino</option><option>Caprino</option><option>Equino</option></select></div>
-            <div class="fc"><span class="fc-lab">Sesso</span><select id="arch_sesso" onchange="renderArchivio()"><option value="">Tutti</option><option>Maschio</option><option>Femmina</option></select></div>
-            <div class="fc"><span class="fc-lab">Cliente</span><select id="arch_cliente" onchange="renderArchivio()"><option value="">Tutti i clienti</option></select></div>
-            <div class="fc"><span class="fc-lab">Macell. dal</span><input type="date" id="arch_dal" onchange="renderArchivio()"></div>
-            <div class="fc"><span class="fc-lab">al</span><input type="date" id="arch_al" onchange="renderArchivio()"></div>
+            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca libera</span><input type="text" id="arch_search" placeholder="Marca, razza, lotto, allevamento…" oninput="filtraArch()" style="max-width:520px"></div>
+            <div class="fc"><span class="fc-lab">Specie</span><select id="arch_specie" onchange="filtraArch()"><option value="">Tutte</option><option>Bovino</option><option>Bufalino</option><option>Suino</option><option>Ovino</option><option>Caprino</option><option>Equino</option></select></div>
+            <div class="fc"><span class="fc-lab">Sesso</span><select id="arch_sesso" onchange="filtraArch()"><option value="">Tutti</option><option>Maschio</option><option>Femmina</option></select></div>
+            <div class="fc"><span class="fc-lab">Cliente</span><select id="arch_cliente" onchange="filtraArch()"><option value="">Tutti i clienti</option></select></div>
+            <div class="fc"><span class="fc-lab">Macell. dal</span><input type="date" id="arch_dal" onchange="filtraArch()"></div>
+            <div class="fc"><span class="fc-lab">al</span><input type="date" id="arch_al" onchange="filtraArch()"></div>
             <button class="btn-ghost" onclick="azzeraFiltri()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera filtri</button>
           </div>
           <p id="archConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 6px"></p>
@@ -3141,7 +3146,17 @@ var qrcode = function() {
     }catch(e){ $('clientiLista').innerHTML='<p class="banner err" style="display:block">Errore: '+esc(e.message||e)+'</p>'; }
   }
   let editCliente=null, cliSel=new Set(), cliVisibleIds=[];
-  function azzeraFiltriClienti(){ ['cli_search','cli_prov','cli_loc','cli_flag'].forEach(id=>{ const e=$(id); if(e) e.value=''; }); renderClienti(); }
+  const PAGE_SIZE=50;
+  let cliPage=1, archPage=1;
+  function pagerHtml(fn, page, pages, total){
+    if(pages<=1) return '<div class="pager"><span class="pinfo">'+total+' risultati</span></div>';
+    const b=(p,lab,dis)=>'<button class="pbtn" '+(dis?'disabled':'onclick="'+fn+'('+p+')"')+'>'+lab+'</button>';
+    return '<div class="pager">'
+      +b(1,'« Inizio',page<=1)+b(page-1,'‹ Indietro',page<=1)
+      +'<span class="pinfo">Pagina '+page+' di '+pages+' · '+total+' risultati</span>'
+      +b(page+1,'Avanti ›',page>=pages)+b(pages,'Fine »',page>=pages)+'</div>';
+  }
+  function azzeraFiltriClienti(){ ['cli_search','cli_prov','cli_loc','cli_flag'].forEach(id=>{ const e=$(id); if(e) e.value=''; }); cliPage=1; renderClienti(); }
   function popolaFiltriClienti(){
     const ps=$('cli_prov'), ls=$('cli_loc');
     if(ps){ const cur=ps.value; const provs=[...new Set(clientiCache.map(c=>(c.provincia||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'it'));
@@ -3166,7 +3181,11 @@ var qrcode = function() {
     });
     if(cnt) cnt.textContent=list.length+' di '+clientiCache.length+' clienti';
     if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato con i filtri impostati.</p>'; return; }
-    cliVisibleIds=list.map(c=>c.id);
+    const pages=Math.max(1, Math.ceil(list.length/PAGE_SIZE));
+    if(cliPage>pages) cliPage=pages; if(cliPage<1) cliPage=1;
+    const startI=(cliPage-1)*PAGE_SIZE;
+    const pageItems=list.slice(startI, startI+PAGE_SIZE);
+    cliVisibleIds=pageItems.map(c=>c.id);
     const bulk='<div class="bulkbar" id="cliBulk" style="'+(cliSel.size?'':'display:none')+'">'
       +'<span class="cnt" id="cliSelCnt">'+cliSel.size+' selezionati</span>'
       +'<button class="btn-ghost mini" onclick="eliminaClientiSelezionati()">🗑️ Elimina selezionati</button>'
@@ -3175,7 +3194,7 @@ var qrcode = function() {
     const head=['Ragione sociale','Indirizzo','CAP','Località','Prov.','Partita IVA','Cod. Fiscale','Azioni'];
     const thead='<tr><th class="selcell"><input type="checkbox" id="cliSelAll" onclick="toggleCliSelAll(this)" '+(allChecked?'checked':'')+'></th>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>';
     const trash='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';
-    const rows=list.map(c=> '<tr><td class="selcell"><input type="checkbox" onclick="toggleCliSel(\''+c.id+'\',this)" '+(cliSel.has(c.id)?'checked':'')+'></td>'+[
+    const rows=pageItems.map(c=> '<tr><td class="selcell"><input type="checkbox" onclick="toggleCliSel(\''+c.id+'\',this)" '+(cliSel.has(c.id)?'checked':'')+'></td>'+[
       '<td class="cli-rs" style="font-weight:600">'+esc(c.nome)+'</td>',
       '<td class="cli-ind">'+esc(c.indirizzo)+'</td>',
       '<td class="mono">'+esc(c.cap)+'</td>',
@@ -3187,8 +3206,12 @@ var qrcode = function() {
     ].join('')+'</tr>').join('');
     box.innerHTML=bulk
       +'<p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px">Usa i filtri qui sopra per restringere i risultati. <span class="mobile-only" style="color:var(--oxblood);font-weight:600">👉 Su telefono scorri la tabella con il dito per vedere tutte le colonne.</span></p>'
-      +'<div class="dt-wrap" id="cliWrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+      +pagerHtml('cliVai',cliPage,pages,list.length)
+      +'<div class="dt-wrap" id="cliWrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>'
+      +pagerHtml('cliVai',cliPage,pages,list.length);
   }
+  function cliVai(p){ cliPage=p; renderClienti(); window.scrollTo({top:0,behavior:'smooth'}); }
+  function filtraCli(){ cliPage=1; renderClienti(); }
   function aggiornaCliBulk(){
     const bar=$('cliBulk'); if(bar) bar.style.display=cliSel.size?'flex':'none';
     const c=$('cliSelCnt'); if(c) c.textContent=cliSel.size+' selezionati';
@@ -3346,12 +3369,12 @@ var qrcode = function() {
   }
   function val(id){ const e=$(id); return e?e.value:''; }
   function clienteName(id){ if(!id) return ''; const c=clientiCache.find(x=>x.id===id); return c?c.nome:''; }
-  function azzeraFiltri(){ ['arch_search','arch_specie','arch_sesso','arch_cliente','arch_dal','arch_al'].forEach(id=>{const e=$(id); if(e) e.value='';}); renderArchivio(); }
+  function azzeraFiltri(){ ['arch_search','arch_specie','arch_sesso','arch_cliente','arch_dal','arch_al'].forEach(id=>{const e=$(id); if(e) e.value='';}); archPage=1; renderArchivio(); }
   function popolaFiltroClienti(){ const sel=$('arch_cliente'); if(!sel) return; const cur=sel.value;
     sel.innerHTML='<option value="">Tutti i clienti</option>'+clientiCache.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join(''); if(cur) sel.value=cur; }
   function fdIso(s){ if(!s) return ''; const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:s; }
   let archSort={key:null, dir:1};
-  function ordinaArchivio(key){ if(archSort.key===key) archSort.dir*=-1; else { archSort.key=key; archSort.dir=1; } renderArchivio(); }
+  function ordinaArchivio(key){ if(archSort.key===key) archSort.dir*=-1; else { archSort.key=key; archSort.dir=1; } archPage=1; renderArchivio(); }
   const ARCH_COLS=[
     {l:'Marca auricolare',k:'marca_auricolare'},{l:'Cod. elettronico',k:'codice_elettronico'},
     {l:'Specie',k:'specie'},{l:'Razza',k:'razza'},{l:'Sesso',k:'sesso'},
@@ -3383,10 +3406,14 @@ var qrcode = function() {
       list.sort((a,b)=>{ const va=k==='_cliente'?clienteName(a.cliente_id):String(a[k]??''); const vb=k==='_cliente'?clienteName(b.cliente_id):String(b[k]??'');
         return va.localeCompare(vb,'it',{numeric:true,sensitivity:'base'})*d; });
     }
-    archVisibleIds=list.map(c=>c.id);
     const cnt=$('archConteggio'); if(cnt) cnt.textContent = archivioCache.length ? (list.length+' di '+archivioCache.length+' capi mostrati') : '';
     if(!archivioCache.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun capo in archivio. Generane uno e premi "Salva nell\'archivio".</p>'; return; }
     if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato con i filtri impostati.</p>'; return; }
+    const pages=Math.max(1, Math.ceil(list.length/PAGE_SIZE));
+    if(archPage>pages) archPage=pages; if(archPage<1) archPage=1;
+    const startI=(archPage-1)*PAGE_SIZE;
+    const pageItems=list.slice(startI, startI+PAGE_SIZE);
+    archVisibleIds=pageItems.map(c=>c.id);
     const bulk='<div class="bulkbar" id="archBulk" style="'+(archSel.size?'':'display:none')+'">'
       +'<span class="cnt" id="archSelCnt">'+archSel.size+' selezionati</span>'
       +'<button class="btn-primary mini" onclick="stampaArchSelezionati()">🖨️ Genera / stampa etichette</button>'
@@ -3396,13 +3423,18 @@ var qrcode = function() {
     const arrow=k=> archSort.key===k ? '<span class="ar">'+(archSort.dir>0?'▲':'▼')+'</span>' : '';
     const thead='<tr><th class="selcell" style="cursor:default"><input type="checkbox" id="archSelAll" onclick="toggleArchSelAll(this)" '+(allChecked?'checked':'')+'></th>'+ARCH_COLS_VIS.map(c=>'<th onclick="ordinaArchivio(\''+c.k+'\')">'+c.l+arrow(c.k)+'</th>').join('')+'<th style="cursor:default">Azioni</th></tr>';
     const fmt=(c,k)=> (k==='data_nascita'||k==='data_macellazione')?fdIso(c[k]) : (k==='_cliente'?clienteName(c.cliente_id):c[k]);
-    const rows=list.map(c=>{ const i=archivioCache.indexOf(c);
+    const rows=pageItems.map(c=>{ const i=archivioCache.indexOf(c);
       const tds=ARCH_COLS_VIS.map(col=>{ let attr=''; if(ARCH_MONO.has(col.k)) attr=' class="mono"'; if(col.k==='marca_auricolare') attr=' class="mono" style="font-weight:600"'; if(col.k==='allevamento') attr=' class="allev"';
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
       return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-ghost mini iconbtn" title="Dettagli — vedi tutti i dati" onclick="dettagliCapo(\''+c.id+'\')">🔍</button><button class="btn-ghost mini iconbtn" title="Modifica tutti i campi" onclick="modificaCapo(\''+c.id+'\')">✏️</button><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini iconbtn btn-del" title="Elimina" onclick="eliminaCapo(\''+c.id+'\')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button></div></td></tr>';
     }).join('');
-    box.innerHTML=bulk+'<div class="dt-wrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+    box.innerHTML=bulk
+      +pagerHtml('archVai',archPage,pages,list.length)
+      +'<div class="dt-wrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>'
+      +pagerHtml('archVai',archPage,pages,list.length);
   }
+  function archVai(p){ archPage=p; renderArchivio(); window.scrollTo({top:0,behavior:'smooth'}); }
+  function filtraArch(){ archPage=1; renderArchivio(); }
   function scrollArch(dir){ scrollWrapById('archWrap', dir); }
   function chiudiModalCapo(){ const m=document.getElementById('capoModal'); if(m) m.style.display='none'; }
   function dettagliCapo(id){
