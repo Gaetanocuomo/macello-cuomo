@@ -3009,7 +3009,9 @@ var qrcode = function() {
     try{
       const {data,error}=await sb.from('impostazioni_attivita').select('*').eq('id',1).maybeSingle();
       if(error) throw error;
-      settings=data||{}; popolaFormAttivita();
+      settings=data||{};
+      if(settings.stampa){ try{ stampaCfg=Object.assign({}, STAMPA_DEFAULT, JSON.parse(settings.stampa)); }catch(e){} }
+      popolaFormAttivita(); popolaFormStampa();
     }catch(e){ setBanner('Connessione al database non riuscita: '+(e.message||e), true); }
   }
   async function salvaAttivita(){
@@ -3634,7 +3636,14 @@ var qrcode = function() {
   function salvaStampaCfg(silent){
     leggiFormStampa();
     try{ localStorage.setItem('stampaCfg_v1', JSON.stringify(stampaCfg)); }catch(e){}
-    if(!silent) setStampaBanner('✓ Modello di stampa salvato. Verrà usato per tutte le etichette.');
+    if(sb){
+      if(!silent) setStampaBanner('Salvataggio nel cloud…');
+      sb.from('impostazioni_attivita').upsert({id:1, stampa:JSON.stringify(stampaCfg)}).then(({error})=>{
+        if(silent) return;
+        if(error) setStampaBanner('⚠️ Salvato su questo dispositivo, ma NON nel cloud: probabilmente manca la colonna «stampa» nel database. Aggiungila (istruzioni a parte) per sincronizzarlo ovunque. Dettaglio: '+esc(error.message||error), true);
+        else setStampaBanner('✓ Modello salvato e sincronizzato nel cloud: vale su tutti i dispositivi e resta dopo il riavvio.');
+      });
+    } else if(!silent){ setStampaBanner('✓ Modello salvato su questo dispositivo.'); }
   }
   function ripristinaStampa(){ stampaCfg=Object.assign({}, STAMPA_DEFAULT); popolaFormStampa(); salvaStampaCfg(true); setStampaBanner('Modello riportato ai valori predefiniti.'); }
   function anteprimaStampa(){
