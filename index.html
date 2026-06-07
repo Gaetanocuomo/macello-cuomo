@@ -2553,6 +2553,15 @@ var qrcode = function() {
   .dt input[type=checkbox]{width:16px;height:16px;accent-color:var(--oxblood);cursor:pointer;margin:0}
   .dt th.selcell,.dt td.selcell{text-align:center;width:40px;padding-left:12px;padding-right:8px}
 
+  /* ---- Finestra modale ---- */
+  .modal{position:fixed;inset:0;background:rgba(28,26,23,.6);z-index:9998;display:flex;align-items:flex-start;justify-content:center;padding:36px 16px;overflow:auto}
+  .modal-card{background:var(--paper-2);border:1px solid var(--line-strong);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.35);width:100%;max-width:680px;margin:auto;overflow:hidden;animation:rise .25s ease both}
+  .modal-h{display:flex;justify-content:space-between;align-items:center;padding:17px 22px;border-bottom:1px solid var(--line);font-family:'Fraunces',Georgia,serif;font-size:19px;font-weight:600;color:var(--ink);background:var(--paper)}
+  .modal-x{cursor:pointer;font-size:26px;line-height:1;color:var(--ink-soft)}
+  .modal-x:hover{color:var(--oxblood)}
+  .modal-b{padding:22px}
+  .modal-f{display:flex;gap:10px;padding:16px 22px;border-top:1px solid var(--line);background:var(--paper)}
+
   @media print{
     body{background:#fff;padding:0}
     body::before{display:none}
@@ -2895,24 +2904,9 @@ var qrcode = function() {
     <section class="panel">
       <div class="panel-h"><span class="dot"></span><h2>Clienti</h2></div>
       <div class="panel-b">
-        <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px">I clienti vengono salvati nel cloud: li ritrovi da qualsiasi dispositivo.</p>
-        <fieldset>
-          <legend id="legendCliente">Nuovo cliente</legend>
-          <div class="row">
-            <div class="field full"><label>Ragione sociale / Nome</label><input type="text" id="c_nome" placeholder="es. Macelleria Rossi"></div>
-            <div class="field full"><label>Indirizzo</label><input type="text" id="c_indirizzo"></div>
-            <div class="field"><label>CAP</label><input type="text" id="c_cap" class="code"></div>
-            <div class="field"><label>Località / Comune</label><input type="text" id="c_citta"></div>
-            <div class="field"><label>Provincia</label><input type="text" id="c_prov" class="code" placeholder="es. SA"></div>
-            <div class="field"><label>Partita IVA</label><input type="text" id="c_piva" class="code"></div>
-            <div class="field"><label>Codice Fiscale</label><input type="text" id="c_cf" class="code"></div>
-            <div class="field"><label>Telefono</label><input type="text" id="c_tel"></div>
-            <div class="field"><label>Email</label><input type="text" id="c_email"></div>
-            <div class="field full"><label>Note</label><textarea id="c_note"></textarea></div>
-          </div>
-        </fieldset>
-        <div class="banner" id="clienteBanner" style="display:none"></div>
-        <div class="actions"><button class="btn-primary" id="btnSalvaCliente" onclick="salvaCliente()">Salva cliente</button><button class="btn-ghost" id="btnAnnullaCliente" onclick="annullaModificaCliente()" style="display:none">Annulla modifica</button></div>
+        <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:18px">I clienti vengono salvati nel cloud: li ritrovi da qualsiasi dispositivo.</p>
+        <div class="banner" id="clienteMsg" style="display:none"></div>
+        <div class="actions" style="margin-bottom:6px"><button class="btn-primary" onclick="apriNuovoCliente()">➕ Nuovo cliente</button></div>
 
         <fieldset style="margin-top:8px">
           <legend>Importa da Excel / CSV</legend>
@@ -2936,6 +2930,31 @@ var qrcode = function() {
         </fieldset>
       </div>
     </section>
+
+    <div id="cliModal" class="modal" style="display:none" onclick="if(event.target===this) chiudiModalCliente()">
+      <div class="modal-card">
+        <div class="modal-h"><span id="legendCliente">Nuovo cliente</span><span class="modal-x" onclick="chiudiModalCliente()">×</span></div>
+        <div class="modal-b">
+          <div class="row">
+            <div class="field full"><label>Ragione sociale / Nome</label><input type="text" id="c_nome" placeholder="es. Macelleria Rossi"></div>
+            <div class="field full"><label>Indirizzo</label><input type="text" id="c_indirizzo"></div>
+            <div class="field"><label>CAP</label><input type="text" id="c_cap" class="code"></div>
+            <div class="field"><label>Località / Comune</label><input type="text" id="c_citta"></div>
+            <div class="field"><label>Provincia</label><input type="text" id="c_prov" class="code" placeholder="es. SA"></div>
+            <div class="field"><label>Partita IVA</label><input type="text" id="c_piva" class="code"></div>
+            <div class="field"><label>Codice Fiscale</label><input type="text" id="c_cf" class="code"></div>
+            <div class="field"><label>Telefono</label><input type="text" id="c_tel"></div>
+            <div class="field"><label>Email</label><input type="text" id="c_email"></div>
+            <div class="field full"><label>Note</label><textarea id="c_note"></textarea></div>
+          </div>
+          <div class="banner" id="clienteBanner" style="display:none"></div>
+        </div>
+        <div class="modal-f">
+          <button class="btn-primary" id="btnSalvaCliente" onclick="salvaCliente()">Salva cliente</button>
+          <button class="btn-ghost" onclick="chiudiModalCliente()">Annulla</button>
+        </div>
+      </div>
+    </div>
   </div>
   <div id="view-archivio" style="display:none">
     <section class="panel">
@@ -2951,6 +2970,7 @@ var qrcode = function() {
           <button class="btn-ghost" onclick="svuotaLotto()">Svuota lista</button>
         </div>
         <div class="banner" id="lottoBanner" style="display:none"></div>
+        <datalist id="clientiDatalist"></datalist>
         <p id="lottoConteggio" style="font-size:13px;color:var(--ink-soft);margin:14px 0 6px;font-weight:600"></p>
         <div id="lottoLista" style="display:flex;flex-direction:column;gap:14px"></div>
         <div class="actions" id="lottoExport" style="display:none;flex-wrap:wrap;gap:10px;margin-top:22px;border-top:2px solid var(--line-strong);padding-top:20px">
@@ -3079,7 +3099,7 @@ var qrcode = function() {
     try{
       const {data,error}=await sb.from('clienti').select('*').order('nome');
       if(error) throw error;
-      clientiCache=data||[]; renderClienti(); popolaTendinaClienti(); popolaFiltroClienti();
+      clientiCache=data||[]; renderClienti(); popolaTendinaClienti(); popolaFiltroClienti(); popolaDatalistClienti();
     }catch(e){ $('clientiLista').innerHTML='<p class="banner err" style="display:block">Errore: '+esc(e.message||e)+'</p>'; }
   }
   let editCliente=null, cliSel=new Set(), cliVisibleIds=[];
@@ -3130,6 +3150,20 @@ var qrcode = function() {
     try{ const {error}=await sb.from('clienti').delete().in('id',ids); if(error) throw error; cliSel.clear(); caricaClienti(); }
     catch(e){ setClienteBanner('Errore: '+esc(e.message||e), true); }
   }
+  function setClienteMsg(html,err){ const b=$('clienteMsg'); if(!b) return; b.innerHTML=html; b.className='banner'+(err?' err':''); b.style.display='block'; }
+  function apriNuovoCliente(){
+    editCliente=null;
+    ['c_nome','c_indirizzo','c_cap','c_citta','c_prov','c_piva','c_cf','c_tel','c_email','c_note'].forEach(id=>{ if($(id)) $(id).value=''; });
+    if($('legendCliente')) $('legendCliente').textContent='Nuovo cliente';
+    if($('btnSalvaCliente')) $('btnSalvaCliente').textContent='Salva cliente';
+    const b=$('clienteBanner'); if(b) b.style.display='none';
+    $('cliModal').style.display='flex'; setTimeout(()=>$('c_nome').focus(),50);
+  }
+  function chiudiModalCliente(){
+    editCliente=null;
+    if($('cliModal')) $('cliModal').style.display='none';
+    const b=$('clienteBanner'); if(b) b.style.display='none';
+  }
   function modificaCliente(id){
     const c=clientiCache.find(x=>x.id===id); if(!c) return;
     editCliente=id;
@@ -3138,33 +3172,23 @@ var qrcode = function() {
     $('c_tel').value=c.telefono||''; $('c_email').value=c.email||''; $('c_note').value=c.note||'';
     if($('legendCliente')) $('legendCliente').textContent='Modifica cliente';
     if($('btnSalvaCliente')) $('btnSalvaCliente').textContent='Salva modifiche';
-    if($('btnAnnullaCliente')) $('btnAnnullaCliente').style.display='inline-flex';
-    setClienteBanner('Stai modificando «'+esc(c.nome)+'». Aggiorna i campi e premi Salva modifiche.');
-    $('c_nome').focus(); window.scrollTo({top:0,behavior:'smooth'});
-  }
-  function annullaModificaCliente(){
-    editCliente=null;
-    ['c_nome','c_indirizzo','c_cap','c_citta','c_prov','c_piva','c_cf','c_tel','c_email','c_note'].forEach(id=>{ if($(id)) $(id).value=''; });
-    if($('legendCliente')) $('legendCliente').textContent='Nuovo cliente';
-    if($('btnSalvaCliente')) $('btnSalvaCliente').textContent='Salva cliente';
-    if($('btnAnnullaCliente')) $('btnAnnullaCliente').style.display='none';
     const b=$('clienteBanner'); if(b) b.style.display='none';
+    $('cliModal').style.display='flex'; setTimeout(()=>$('c_nome').focus(),50);
   }
   async function salvaCliente(){
     const nome=$('c_nome').value.trim();
-    if(!nome){ $('c_nome').focus(); return; }
+    if(!nome){ setClienteBanner('Inserisci la ragione sociale / nome.', true); $('c_nome').focus(); return; }
     if(!sb){ setClienteBanner('Manca la connessione a internet.', true); return; }
     const rec={ nome, indirizzo:$('c_indirizzo').value.trim(), cap:$('c_cap').value.trim(), citta:$('c_citta').value.trim(),
       provincia:$('c_prov').value.trim(), piva:$('c_piva').value.trim(), cod_fiscale:$('c_cf').value.trim(),
       telefono:$('c_tel').value.trim(), email:$('c_email').value.trim(), note:$('c_note').value.trim() };
     try{
-      let error;
+      let error; const eraModifica=!!editCliente;
       if(editCliente){ ({error}=await sb.from('clienti').update(rec).eq('id',editCliente)); }
       else { ({error}=await sb.from('clienti').insert(rec)); }
       if(error) throw error;
-      const eraModifica=!!editCliente;
-      annullaModificaCliente();
-      setClienteBanner(eraModifica?'✓ Cliente aggiornato.':'✓ Cliente salvato.'); caricaClienti();
+      chiudiModalCliente();
+      setClienteMsg(eraModifica?'✓ Cliente aggiornato.':'✓ Cliente salvato.'); caricaClienti();
     }catch(e){ setClienteBanner('Errore: '+esc(e.message||e), true); }
   }
   function setCliImportBanner(html,err){ const b=$('cliImportBanner'); if(!b) return; b.innerHTML=html; b.className='banner'+(err?' err':''); b.style.display='block'; }
@@ -3446,10 +3470,11 @@ var qrcode = function() {
     }
 
     lottoBanner('Lettura di '+daCaricare.length+' file in corso…');
+    const dupNames=new Set([...dLista,...dArch].map(f=>norm(f.name)));
     let agg=0, err=0;
     for(const f of daCaricare){
       if(f.type!=='application/pdf' && !/\.pdf$/i.test(f.name)){ err++; continue; }
-      try{ const capi=await pdfToCapi(f); capi.forEach(c=>{ c._sel=true; c._file=f.name; batch.push(c); agg++; }); }
+      try{ const capi=await pdfToCapi(f); const isDup=dupNames.has(norm(f.name)); capi.forEach(c=>{ c._sel=true; c._file=f.name; c._dup=isDup; batch.push(c); agg++; }); }
       catch(e){ err++; }
     }
     ev.target.value=''; renderBatch();
@@ -3458,12 +3483,24 @@ var qrcode = function() {
     if(err) extra.push(err+' file non leggibili');
     lottoBanner((dupTot&&!inclusi?'⚠️ ':'✓ ')+'Aggiunti <b>'+agg+'</b> capi da '+daCaricare.length+' file'+(extra.length?(' · '+extra.join(' · ')):'')+'.', dupTot&&!inclusi);
   }
+  function popolaDatalistClienti(){
+    const dl=$('clientiDatalist'); if(!dl) return;
+    dl.innerHTML=clientiCache.map(c=>{ const extra=[c.citta,c.piva].filter(Boolean).join(' · '); return '<option value="'+esc(c.nome)+'">'+esc(extra)+'</option>'; }).join('');
+  }
+  function clienteNomeById(id){ const c=clientiCache.find(x=>x.id===id); return c?c.nome:''; }
+  function batchSetCliente(i,val){
+    if(!batch[i]) return;
+    const v=String(val||'').trim().toLowerCase();
+    if(!v){ batch[i].cliente_id=''; return; }
+    const c=clientiCache.find(x=>(x.nome||'').trim().toLowerCase()===v);
+    batch[i].cliente_id = c?c.id:'';
+  }
   function lf(i,key,label,type){
     return `<label style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px">${label}<input type="${type||'text'}" value="${esc(batch[i][key]||'')}" onchange="batchEdit(${i},'${key}',this.value)" style="padding:7px 9px;border:1.5px solid var(--line-strong);border-radius:3px;font-size:13px;font-family:inherit;background:var(--paper)"></label>`;
   }
   function lfCliente(i){
-    const opts='<option value="">— nessuno —</option>'+clientiCache.map(c=>`<option value="${c.id}" ${c.id===batch[i].cliente_id?'selected':''}>${esc(c.nome)}</option>`).join('');
-    return `<label style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px">Cliente destinatario<select onchange="batchEdit(${i},'cliente_id',this.value)" style="padding:7px 9px;border:1.5px solid var(--line-strong);border-radius:3px;font-size:13px;font-family:inherit;background:var(--paper)">${opts}</select></label>`;
+    const val=esc(clienteNomeById(batch[i].cliente_id));
+    return `<label style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px">Cliente destinatario (cerca e scegli)<input list="clientiDatalist" value="${val}" placeholder="Digita il nome del cliente…" onchange="batchSetCliente(${i},this.value)" style="padding:7px 9px;border:1.5px solid var(--line-strong);border-radius:3px;font-size:13px;font-family:inherit;background:var(--paper)"></label>`;
   }
   function renderBatch(){
     const box=$('lottoLista'); if(!box) return;
@@ -3473,7 +3510,7 @@ var qrcode = function() {
     box.innerHTML=batch.map((e,i)=>`<div style="border:2px solid var(--line-strong);border-radius:4px;background:var(--paper)">
       <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1.5px dashed var(--line-strong);background:#f4f1ea">
         <input type="checkbox" ${e._sel?'checked':''} onchange="batchToggle(${i},this.checked)" style="width:18px;height:18px;flex-shrink:0">
-        <div style="flex:1;min-width:0"><span style="font-family:'IBM Plex Mono',monospace;font-weight:700">${esc(e.marca_auricolare||'(senza marca)')}</span>
+        <div style="flex:1;min-width:0"><span style="font-family:'IBM Plex Mono',monospace;font-weight:700">${esc(e.marca_auricolare||'(senza marca)')}</span>${e._dup?'<span style="background:#b3261e;color:#fff;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:5px;margin-left:8px;vertical-align:middle">⚠ DOPPIONE</span>':''}
         <span style="font-size:11.5px;color:var(--ink-soft);margin-left:8px">${esc(e._file||'')}</span></div>
         <button class="btn-ghost" style="padding:5px 11px;font-size:12px" onclick="batchRemove(${i})">✕</button>
       </div>
