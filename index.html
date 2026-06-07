@@ -2522,7 +2522,11 @@ var qrcode = function() {
   .scrollnav button:hover{background:var(--oxblood-dk)}
 
   /* ---- Tabella dati MOD 4 ---- */
-  .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm)}
+  .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-width:auto}
+  .dt-wrap::-webkit-scrollbar{height:16px;width:16px}
+  .dt-wrap::-webkit-scrollbar-track{background:#efe7da}
+  .dt-wrap::-webkit-scrollbar-thumb{background:var(--oxblood);border-radius:8px;border:3px solid #efe7da}
+  .dt-wrap::-webkit-scrollbar-thumb:hover{background:var(--oxblood-dk)}
   .dt-topscroll{overflow-x:scroll;overflow-y:hidden;margin-bottom:6px;border:1px solid var(--line);border-radius:8px;background:var(--paper-2)}
   .dt-topscroll-inner{height:1px}
   .dt{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
@@ -2994,7 +2998,7 @@ var qrcode = function() {
             <button class="btn-ghost" onclick="azzeraFiltri()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera filtri</button>
           </div>
           <p id="archConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 6px"></p>
-          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne: usa la <b>barra di scorrimento</b> sopra la tabella oppure i <b>pulsanti ◀ ▶</b> (o Shift + rotellina del mouse) per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note.</p>
+          <p style="font-size:11.5px;color:var(--oxblood);margin:0 0 12px">↔ La tabella ha molte colonne. Per vedere ASL, Stato sanitario, Doc. MOD 4, Peso, Lotto, Cliente e Note: <b>clicca sulla tabella e trascinala</b> verso sinistra con il mouse (tenendo premuto), oppure usa i <b>pulsanti ◀ ▶</b> o la rotella del mouse.</p>
           <div id="archivioLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
         </fieldset>
       </div>
@@ -3359,8 +3363,38 @@ var qrcode = function() {
     let lock=false;
     ts.onscroll=()=>{ if(lock)return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; };
     wrap.onscroll=()=>{ if(lock)return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; };
+    // Trascinamento con il mouse (come trascinare una mappa) — funziona su ogni browser
+    wrap.style.cursor='grab';
+    let down=false, startX=0, startL=0;
+    wrap.addEventListener('pointerdown', e=>{
+      if(e.target.closest('input,button,a,select,label')) return; // non sui controlli
+      down=true; startX=e.clientX; startL=wrap.scrollLeft; wrap.style.cursor='grabbing';
+      try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
+    });
+    wrap.addEventListener('pointermove', e=>{
+      if(!down) return; e.preventDefault();
+      wrap.scrollLeft = startL - (e.clientX - startX);
+    });
+    const stopDrag=()=>{ down=false; wrap.style.cursor='grab'; };
+    wrap.addEventListener('pointerup', stopDrag);
+    wrap.addEventListener('pointercancel', stopDrag);
+    wrap.addEventListener('pointerleave', stopDrag);
+    // Rotella del mouse → scorre in orizzontale
+    wrap.addEventListener('wheel', e=>{
+      const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if(d===0) return;
+      const max = wrap.scrollWidth - wrap.clientWidth;
+      if(max<=0) return;
+      if((wrap.scrollLeft<=0 && d<0) || (wrap.scrollLeft>=max && d>0)) return;
+      wrap.scrollLeft += d; e.preventDefault();
+    }, {passive:false});
   }
-  function scrollArch(dir){ const w=$('archWrap'), t=$('archTopScroll'); if(!w) return; const amt=Math.max(300, Math.round(w.clientWidth*0.7)); w.scrollLeft += dir*amt; if(t) t.scrollLeft=w.scrollLeft; }
+  function scrollArch(dir){
+    const w=$('archWrap'); if(!w) return;
+    const amt=Math.max(240, Math.round(w.clientWidth*0.6));
+    const max=Math.max(0, w.scrollWidth - w.clientWidth);
+    w.scrollLeft = Math.max(0, Math.min(max, w.scrollLeft + dir*amt));
+  }
   function aggiornaArchBulk(){
     const bar=$('archBulk'); if(bar) bar.style.display=archSel.size?'flex':'none';
     const c=$('archSelCnt'); if(c) c.textContent=archSel.size+' selezionati';
