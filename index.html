@@ -2982,17 +2982,6 @@ var qrcode = function() {
         </div>
       </div>
     </div>
-
-    <div id="capoModal" class="modal" style="display:none" onclick="if(event.target===this) chiudiModalCapo()">
-      <div class="modal-card">
-        <div class="modal-h"><span>Scheda capo</span><span class="modal-x" onclick="chiudiModalCapo()">×</span></div>
-        <div class="modal-b" id="capoModalBody"></div>
-        <div class="modal-f">
-          <button class="btn-primary" id="btnEtichettaCapo">🖨️ Genera / stampa etichetta</button>
-          <button class="btn-ghost" onclick="chiudiModalCapo()">Chiudi</button>
-        </div>
-      </div>
-    </div>
   </div>
   <div id="view-archivio" style="display:none">
     <section class="panel">
@@ -3413,7 +3402,7 @@ var qrcode = function() {
     box.innerHTML=bulk+'<div class="dt-wrap"><table class="dt dt-arch"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
   }
   function scrollArch(dir){ scrollWrapById('archWrap', dir); }
-  function chiudiModalCapo(){ const m=$('capoModal'); if(m) m.style.display='none'; }
+  function chiudiModalCapo(){ const m=document.getElementById('capoModal'); if(m) m.style.display='none'; }
   function dettagliCapo(id){
     const c=archivioCache.find(x=>x.id===id); if(!c) return;
     const i=archivioCache.indexOf(c);
@@ -3427,9 +3416,15 @@ var qrcode = function() {
       ['Macello CE',c.macello],['Data macellazione',F('data_macellazione')],
       ['Peso',c.peso],['Lotto',c.lotto],['Cliente',clienteName(c.cliente_id)],['Note',c.note]
     ];
-    $('capoModalBody').innerHTML='<div class="dgrid">'+rows.map(r=>'<div class="drow"><span class="dk">'+esc(r[0])+'</span><span class="dv">'+(r[1]?esc(String(r[1])):'—')+'</span></div>').join('')+'</div>';
-    const btn=$('btnEtichettaCapo'); if(btn) btn.onclick=()=>{ chiudiModalCapo(); etichettaArchivio(i); };
-    $('capoModal').style.display='flex';
+    const body='<div class="dgrid">'+rows.map(r=>'<div class="drow"><span class="dk">'+esc(r[0])+'</span><span class="dv">'+(r[1]?esc(String(r[1])):'—')+'</span></div>').join('')+'</div>';
+    let m=document.getElementById('capoModal');
+    if(!m){ m=document.createElement('div'); m.id='capoModal'; m.className='modal'; m.style.display='none';
+      m.addEventListener('click',e=>{ if(e.target===m) chiudiModalCapo(); });
+      document.body.appendChild(m);
+    }
+    m.innerHTML='<div class="modal-card"><div class="modal-h"><span>Scheda capo</span><span class="modal-x" onclick="chiudiModalCapo()">×</span></div><div class="modal-b">'+body+'</div><div class="modal-f"><button class="btn-primary" id="btnEtichettaCapo">🖨️ Genera / stampa etichetta</button><button class="btn-ghost" onclick="chiudiModalCapo()">Chiudi</button></div></div>';
+    m.querySelector('#btnEtichettaCapo').onclick=()=>{ chiudiModalCapo(); etichettaArchivio(i); };
+    m.style.display='flex';
   }
   // ---- Scorrimento orizzontale riutilizzabile per qualsiasi tabella ----
   function scrollWrapById(id, dir){
