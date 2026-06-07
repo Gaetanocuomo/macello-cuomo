@@ -2921,7 +2921,10 @@ var qrcode = function() {
           <legend>Elenco clienti</legend>
           <div class="filterbar">
             <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca</span><input type="text" id="cli_search" placeholder="Nome, indirizzo, comune, provincia, P.IVA, C.F., telefono, email…" oninput="renderClienti()" style="max-width:560px"></div>
-            <button class="btn-ghost" onclick="azzeraFiltriClienti()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera</button>
+            <div class="fc"><span class="fc-lab">Provincia</span><select id="cli_prov" onchange="renderClienti()"><option value="">Tutte</option></select></div>
+            <div class="fc"><span class="fc-lab">Località / Comune</span><select id="cli_loc" onchange="renderClienti()"><option value="">Tutte</option></select></div>
+            <div class="fc"><span class="fc-lab">Dati presenti</span><select id="cli_flag" onchange="renderClienti()"><option value="">Tutti</option><option value="piva">Con Partita IVA</option><option value="cf">Con Cod. Fiscale</option><option value="email">Con email</option><option value="tel">Con telefono</option></select></div>
+            <button class="btn-ghost" onclick="azzeraFiltriClienti()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera filtri</button>
           </div>
           <p id="cliConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 12px"></p>
           <div id="clientiLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
@@ -3097,19 +3100,35 @@ var qrcode = function() {
     try{
       const {data,error}=await sb.from('clienti').select('*').order('nome');
       if(error) throw error;
-      clientiCache=data||[]; renderClienti(); popolaTendinaClienti(); popolaFiltroClienti(); popolaDatalistClienti();
+      clientiCache=data||[]; renderClienti(); popolaTendinaClienti(); popolaFiltroClienti(); popolaDatalistClienti(); popolaFiltriClienti();
     }catch(e){ $('clientiLista').innerHTML='<p class="banner err" style="display:block">Errore: '+esc(e.message||e)+'</p>'; }
   }
   let editCliente=null, cliSel=new Set(), cliVisibleIds=[];
-  function azzeraFiltriClienti(){ if($('cli_search')) $('cli_search').value=''; renderClienti(); }
+  function azzeraFiltriClienti(){ ['cli_search','cli_prov','cli_loc','cli_flag'].forEach(id=>{ const e=$(id); if(e) e.value=''; }); renderClienti(); }
+  function popolaFiltriClienti(){
+    const ps=$('cli_prov'), ls=$('cli_loc');
+    if(ps){ const cur=ps.value; const provs=[...new Set(clientiCache.map(c=>(c.provincia||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'it'));
+      ps.innerHTML='<option value="">Tutte</option>'+provs.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join(''); if(cur) ps.value=cur; }
+    if(ls){ const cur=ls.value; const locs=[...new Set(clientiCache.map(c=>(c.citta||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'it'));
+      ls.innerHTML='<option value="">Tutte</option>'+locs.map(l=>'<option value="'+esc(l)+'">'+esc(l)+'</option>').join(''); if(cur) ls.value=cur; }
+  }
   function renderClienti(){
     const box=$('clientiLista'); if(!box) return;
     const cnt=$('cliConteggio');
     if(!clientiCache.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun cliente ancora. Aggiungine uno qui sopra.</p>'; if(cnt) cnt.textContent=''; return; }
-    const q=(val('cli_search')||'').toLowerCase().trim();
-    const list=clientiCache.filter(c=> !q || ((c.nome||'')+' '+(c.indirizzo||'')+' '+(c.cap||'')+' '+(c.citta||'')+' '+(c.provincia||'')+' '+(c.piva||'')+' '+(c.cod_fiscale||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase().includes(q));
+    const q=(val('cli_search')||'').toLowerCase().trim(), fp=val('cli_prov'), fl=val('cli_loc'), ff=val('cli_flag');
+    const list=clientiCache.filter(c=>{
+      if(q && !((c.nome||'')+' '+(c.indirizzo||'')+' '+(c.cap||'')+' '+(c.citta||'')+' '+(c.provincia||'')+' '+(c.piva||'')+' '+(c.cod_fiscale||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase().includes(q)) return false;
+      if(fp && (c.provincia||'').trim()!==fp) return false;
+      if(fl && (c.citta||'').trim()!==fl) return false;
+      if(ff==='piva' && !(c.piva||'').trim()) return false;
+      if(ff==='cf' && !(c.cod_fiscale||'').trim()) return false;
+      if(ff==='email' && !(c.email||'').trim()) return false;
+      if(ff==='tel' && !(c.telefono||'').trim()) return false;
+      return true;
+    });
     if(cnt) cnt.textContent=list.length+' di '+clientiCache.length+' clienti';
-    if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato.</p>'; return; }
+    if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato con i filtri impostati.</p>'; return; }
     cliVisibleIds=list.map(c=>c.id);
     const bulk='<div class="bulkbar" id="cliBulk" style="'+(cliSel.size?'':'display:none')+'">'
       +'<span class="cnt" id="cliSelCnt">'+cliSel.size+' selezionati</span>'
