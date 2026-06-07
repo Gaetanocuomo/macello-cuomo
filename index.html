@@ -2522,7 +2522,10 @@ var qrcode = function() {
   .scrollnav button:hover{background:var(--oxblood-dk)}
 
   /* ---- Tabella dati MOD 4 ---- */
-  .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-width:auto}
+  .dt-wrap{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);box-shadow:var(--shadow-sm);scrollbar-width:auto;cursor:grab;user-select:none;-webkit-user-select:none;-ms-user-select:none}
+  .dt-wrap.grabbing{cursor:grabbing}
+  .dt-wrap button,.dt-wrap a{cursor:pointer}
+  .dt-wrap input{cursor:pointer}
   .dt-wrap::-webkit-scrollbar{height:16px;width:16px}
   .dt-wrap::-webkit-scrollbar-track{background:#efe7da}
   .dt-wrap::-webkit-scrollbar-thumb{background:var(--oxblood);border-radius:8px;border:3px solid #efe7da}
@@ -3367,31 +3370,7 @@ var qrcode = function() {
     let lock=false;
     ts.onscroll=()=>{ if(lock)return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; };
     wrap.onscroll=()=>{ if(lock)return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; };
-    // Trascinamento con il mouse (come trascinare una mappa) — funziona su ogni browser
-    wrap.style.cursor='grab';
-    let down=false, startX=0, startL=0;
-    wrap.addEventListener('pointerdown', e=>{
-      if(e.target.closest('input,button,a,select,label')) return; // non sui controlli
-      down=true; startX=e.clientX; startL=wrap.scrollLeft; wrap.style.cursor='grabbing';
-      try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
-    });
-    wrap.addEventListener('pointermove', e=>{
-      if(!down) return; e.preventDefault();
-      wrap.scrollLeft = startL - (e.clientX - startX);
-    });
-    const stopDrag=()=>{ down=false; wrap.style.cursor='grab'; };
-    wrap.addEventListener('pointerup', stopDrag);
-    wrap.addEventListener('pointercancel', stopDrag);
-    wrap.addEventListener('pointerleave', stopDrag);
-    // Rotella del mouse → scorre in orizzontale
-    wrap.addEventListener('wheel', e=>{
-      const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      if(d===0) return;
-      const max = wrap.scrollWidth - wrap.clientWidth;
-      if(max<=0) return;
-      if((wrap.scrollLeft<=0 && d<0) || (wrap.scrollLeft>=max && d>0)) return;
-      wrap.scrollLeft += d; e.preventDefault();
-    }, {passive:false});
+    setupDragScroll(wrap);
   }
   function scrollArch(dir){ scrollWrapById('archWrap', dir); }
   // ---- Scorrimento orizzontale riutilizzabile per qualsiasi tabella ----
@@ -3403,18 +3382,18 @@ var qrcode = function() {
   }
   function setupDragScroll(wrap){
     if(!wrap || wrap._dragReady) return; wrap._dragReady=true;
-    wrap.style.cursor='grab';
     let down=false, startX=0, startL=0;
     wrap.addEventListener('pointerdown', e=>{
       if(e.target.closest('input,button,a,select,label')) return;
-      down=true; startX=e.clientX; startL=wrap.scrollLeft; wrap.style.cursor='grabbing';
+      down=true; startX=e.clientX; startL=wrap.scrollLeft; wrap.classList.add('grabbing');
+      e.preventDefault();
       try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
     });
     wrap.addEventListener('pointermove', e=>{
       if(!down) return; e.preventDefault();
       wrap.scrollLeft = startL - (e.clientX - startX);
     });
-    const stop=()=>{ down=false; wrap.style.cursor='grab'; };
+    const stop=()=>{ down=false; wrap.classList.remove('grabbing'); };
     wrap.addEventListener('pointerup', stop);
     wrap.addEventListener('pointercancel', stop);
     wrap.addEventListener('pointerleave', stop);
