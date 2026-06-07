@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /**
  * @licstart The following is the entire license notice for the
@@ -2900,10 +2901,13 @@ var qrcode = function() {
         <fieldset>
           <legend id="legendCliente">Nuovo cliente</legend>
           <div class="row">
-            <div class="field full"><label>Nome / Ragione sociale</label><input type="text" id="c_nome" placeholder="es. Macelleria Rossi"></div>
+            <div class="field full"><label>Ragione sociale / Nome</label><input type="text" id="c_nome" placeholder="es. Macelleria Rossi"></div>
             <div class="field full"><label>Indirizzo</label><input type="text" id="c_indirizzo"></div>
-            <div class="field"><label>Comune / Prov.</label><input type="text" id="c_citta"></div>
-            <div class="field"><label>P.IVA / Cod. Fiscale</label><input type="text" id="c_piva" class="code"></div>
+            <div class="field"><label>CAP</label><input type="text" id="c_cap" class="code"></div>
+            <div class="field"><label>Località / Comune</label><input type="text" id="c_citta"></div>
+            <div class="field"><label>Provincia</label><input type="text" id="c_prov" class="code" placeholder="es. SA"></div>
+            <div class="field"><label>Partita IVA</label><input type="text" id="c_piva" class="code"></div>
+            <div class="field"><label>Codice Fiscale</label><input type="text" id="c_cf" class="code"></div>
             <div class="field"><label>Telefono</label><input type="text" id="c_tel"></div>
             <div class="field"><label>Email</label><input type="text" id="c_email"></div>
             <div class="field full"><label>Note</label><textarea id="c_note"></textarea></div>
@@ -2911,11 +2915,23 @@ var qrcode = function() {
         </fieldset>
         <div class="banner" id="clienteBanner" style="display:none"></div>
         <div class="actions"><button class="btn-primary" id="btnSalvaCliente" onclick="salvaCliente()">Salva cliente</button><button class="btn-ghost" id="btnAnnullaCliente" onclick="annullaModificaCliente()" style="display:none">Annulla modifica</button></div>
+
+        <fieldset style="margin-top:8px">
+          <legend>Importa da Excel / CSV</legend>
+          <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:6px 0 14px">Carica il file dei clienti esportato da Arca (Excel .xls/.xlsx o CSV). L'app riconosce le colonne <b>Ragione Sociale, Indirizzo, CAP, Località, Provincia, Partita Iva, Cod.Fiscale</b> (e anche Telefono/Email se presenti) e inserisce tutti i clienti in un colpo solo. I clienti già presenti (stesso nome e P.IVA) vengono saltati per evitare doppioni.</p>
+          <div class="actions" style="flex-wrap:wrap;gap:10px">
+            <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center">📥 Importa clienti da file
+              <input type="file" id="cliImport" accept=".xls,.xlsx,.csv" style="display:none" onchange="importaClienti(event)">
+            </label>
+          </div>
+          <div class="banner" id="cliImportBanner" style="display:none"></div>
+        </fieldset>
+
         <fieldset style="margin-top:8px">
           <legend>Elenco clienti</legend>
           <div class="filterbar">
-            <div class="fc" style="flex:1;min-width:200px"><span class="fc-lab">Ricerca</span><input type="text" id="cli_search" placeholder="Nome, comune, P.IVA, telefono, email…" oninput="renderClienti()"></div>
-            <button class="btn-ghost" onclick="azzeraFiltriClienti()" style="padding:9px 16px">Azzera</button>
+            <div class="fc" style="grid-column:1 / -1"><span class="fc-lab">Ricerca</span><input type="text" id="cli_search" placeholder="Nome, indirizzo, comune, provincia, P.IVA, C.F., telefono, email…" oninput="renderClienti()"></div>
+            <button class="btn-ghost" onclick="azzeraFiltriClienti()" style="grid-column:1 / -1;justify-self:start;padding:9px 18px">Azzera</button>
           </div>
           <p id="cliConteggio" style="font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin:0 0 12px"></p>
           <div id="clientiLista"><p style="color:var(--ink-soft);font-size:13px">Caricamento…</p></div>
@@ -3075,7 +3091,7 @@ var qrcode = function() {
     const cnt=$('cliConteggio');
     if(!clientiCache.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun cliente ancora. Aggiungine uno qui sopra.</p>'; if(cnt) cnt.textContent=''; return; }
     const q=(val('cli_search')||'').toLowerCase().trim();
-    const list=clientiCache.filter(c=> !q || ((c.nome||'')+' '+(c.citta||'')+' '+(c.piva||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase().includes(q));
+    const list=clientiCache.filter(c=> !q || ((c.nome||'')+' '+(c.indirizzo||'')+' '+(c.cap||'')+' '+(c.citta||'')+' '+(c.provincia||'')+' '+(c.piva||'')+' '+(c.cod_fiscale||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase().includes(q));
     if(cnt) cnt.textContent=list.length+' di '+clientiCache.length+' clienti';
     if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato.</p>'; return; }
     cliVisibleIds=list.map(c=>c.id);
@@ -3084,13 +3100,16 @@ var qrcode = function() {
       +'<button class="btn-ghost mini" onclick="eliminaClientiSelezionati()">🗑️ Elimina selezionati</button>'
       +'<button class="btn-ghost mini" onclick="deselezionaCli()">Deseleziona tutto</button></div>';
     const allChecked=cliVisibleIds.length>0 && cliVisibleIds.every(id=>cliSel.has(id));
-    const head=['Nome / Ragione sociale','Indirizzo','Comune/Prov','P.IVA / CF','Telefono','Email','Note','Azioni'];
+    const head=['Ragione sociale','Indirizzo','CAP','Località','Prov.','Partita IVA','Cod. Fiscale','Telefono','Email','Note','Azioni'];
     const thead='<tr><th class="selcell"><input type="checkbox" id="cliSelAll" onclick="toggleCliSelAll(this)" '+(allChecked?'checked':'')+'></th>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>';
     const rows=list.map(c=> '<tr><td class="selcell"><input type="checkbox" onclick="toggleCliSel(\''+c.id+'\',this)" '+(cliSel.has(c.id)?'checked':'')+'></td>'+[
       '<td style="font-weight:600">'+esc(c.nome)+'</td>',
       '<td>'+esc(c.indirizzo)+'</td>',
+      '<td class="mono">'+esc(c.cap)+'</td>',
       '<td>'+esc(c.citta)+'</td>',
+      '<td class="mono">'+esc(c.provincia)+'</td>',
       '<td class="mono">'+esc(c.piva)+'</td>',
+      '<td class="mono">'+esc(c.cod_fiscale)+'</td>',
       '<td>'+esc(c.telefono)+'</td>',
       '<td>'+esc(c.email)+'</td>',
       '<td>'+esc(c.note)+'</td>',
@@ -3116,8 +3135,9 @@ var qrcode = function() {
   function modificaCliente(id){
     const c=clientiCache.find(x=>x.id===id); if(!c) return;
     editCliente=id;
-    $('c_nome').value=c.nome||''; $('c_indirizzo').value=c.indirizzo||''; $('c_citta').value=c.citta||'';
-    $('c_piva').value=c.piva||''; $('c_tel').value=c.telefono||''; $('c_email').value=c.email||''; $('c_note').value=c.note||'';
+    $('c_nome').value=c.nome||''; $('c_indirizzo').value=c.indirizzo||''; $('c_cap').value=c.cap||''; $('c_citta').value=c.citta||'';
+    $('c_prov').value=c.provincia||''; $('c_piva').value=c.piva||''; $('c_cf').value=c.cod_fiscale||'';
+    $('c_tel').value=c.telefono||''; $('c_email').value=c.email||''; $('c_note').value=c.note||'';
     if($('legendCliente')) $('legendCliente').textContent='Modifica cliente';
     if($('btnSalvaCliente')) $('btnSalvaCliente').textContent='Salva modifiche';
     if($('btnAnnullaCliente')) $('btnAnnullaCliente').style.display='inline-flex';
@@ -3126,7 +3146,7 @@ var qrcode = function() {
   }
   function annullaModificaCliente(){
     editCliente=null;
-    ['c_nome','c_indirizzo','c_citta','c_piva','c_tel','c_email','c_note'].forEach(id=>{ if($(id)) $(id).value=''; });
+    ['c_nome','c_indirizzo','c_cap','c_citta','c_prov','c_piva','c_cf','c_tel','c_email','c_note'].forEach(id=>{ if($(id)) $(id).value=''; });
     if($('legendCliente')) $('legendCliente').textContent='Nuovo cliente';
     if($('btnSalvaCliente')) $('btnSalvaCliente').textContent='Salva cliente';
     if($('btnAnnullaCliente')) $('btnAnnullaCliente').style.display='none';
@@ -3136,8 +3156,9 @@ var qrcode = function() {
     const nome=$('c_nome').value.trim();
     if(!nome){ $('c_nome').focus(); return; }
     if(!sb){ setClienteBanner('Manca la connessione a internet.', true); return; }
-    const rec={ nome, indirizzo:$('c_indirizzo').value.trim(), citta:$('c_citta').value.trim(),
-      piva:$('c_piva').value.trim(), telefono:$('c_tel').value.trim(), email:$('c_email').value.trim(), note:$('c_note').value.trim() };
+    const rec={ nome, indirizzo:$('c_indirizzo').value.trim(), cap:$('c_cap').value.trim(), citta:$('c_citta').value.trim(),
+      provincia:$('c_prov').value.trim(), piva:$('c_piva').value.trim(), cod_fiscale:$('c_cf').value.trim(),
+      telefono:$('c_tel').value.trim(), email:$('c_email').value.trim(), note:$('c_note').value.trim() };
     try{
       let error;
       if(editCliente){ ({error}=await sb.from('clienti').update(rec).eq('id',editCliente)); }
@@ -3147,6 +3168,56 @@ var qrcode = function() {
       annullaModificaCliente();
       setClienteBanner(eraModifica?'✓ Cliente aggiornato.':'✓ Cliente salvato.'); caricaClienti();
     }catch(e){ setClienteBanner('Errore: '+esc(e.message||e), true); }
+  }
+  function setCliImportBanner(html,err){ const b=$('cliImportBanner'); if(!b) return; b.innerHTML=html; b.className='banner'+(err?' err':''); b.style.display='block'; }
+  function normKeyCli(nome,piva){ return (String(nome||'').toLowerCase().replace(/\s+/g,' ').trim())+'|'+(String(piva||'').replace(/\s+/g,'').trim()); }
+  async function importaClienti(ev){
+    const f=ev.target.files[0]; if(!f) return;
+    if(!sb){ setCliImportBanner('Manca la connessione a internet.', true); ev.target.value=''; return; }
+    if(typeof XLSX==='undefined'){ setCliImportBanner('Libreria di lettura Excel non ancora pronta: ricarica la pagina e riprova.', true); ev.target.value=''; return; }
+    setCliImportBanner('Lettura del file in corso…');
+    try{
+      const buf=await f.arrayBuffer();
+      const wb=XLSX.read(buf,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const righe=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      if(!righe.length){ setCliImportBanner('Il file non contiene righe.', true); ev.target.value=''; return; }
+      // mappa intestazioni (tollerante a maiuscole/spazi/accenti)
+      const keymap={}; Object.keys(righe[0]).forEach(k=>{ keymap[k.toLowerCase().replace(/\s|\./g,'')]=k; });
+      const col=(...alts)=>{ for(const a of alts){ const kk=a.toLowerCase().replace(/\s|\./g,''); if(keymap[kk]!==undefined) return keymap[kk]; } return null; };
+      const cNome=col('Ragione Sociale','ragionesociale','Nome','Cliente','Denominazione');
+      const cInd=col('Indirizzo'); const cCap=col('CAP','C.A.P.'); const cLoc=col('Località','Localita','Comune','Città','Citta');
+      const cProv=col('Provincia','Prov','Pr'); const cPiva=col('Partita Iva','P.IVA','PIVA','Partita I.V.A.');
+      const cCf=col('Cod.Fiscale','Codice Fiscale','CodiceFiscale','C.F.','CF');
+      const cTel=col('Telefono','Tel','Cellulare'); const cEmail=col('Email','E-mail','Mail');
+      if(!cNome){ setCliImportBanner('Non trovo la colonna «Ragione Sociale» nel file. Controlla l\'intestazione.', true); ev.target.value=''; return; }
+      const T=v=>String(v==null?'':v).trim();
+      let candidati=righe.map(r=>({
+        nome:T(r[cNome]), indirizzo:cInd?T(r[cInd]):'', cap:cCap?T(r[cCap]):'', citta:cLoc?T(r[cLoc]):'',
+        provincia:cProv?T(r[cProv]):'', piva:cPiva?T(r[cPiva]):'', cod_fiscale:cCf?T(r[cCf]):'',
+        telefono:cTel?T(r[cTel]):'', email:cEmail?T(r[cEmail]):''
+      })).filter(c=>c.nome);
+      const tot=candidati.length;
+      // anti-doppioni: salto quelli già presenti (stesso nome + P.IVA)
+      const esistenti=new Set(clientiCache.map(c=>normKeyCli(c.nome,c.piva)));
+      const visti=new Set();
+      const daInserire=candidati.filter(c=>{ const k=normKeyCli(c.nome,c.piva); if(esistenti.has(k)||visti.has(k)) return false; visti.add(k); return true; });
+      const saltati=tot-daInserire.length;
+      if(!daInserire.length){ setCliImportBanner('Trovati '+tot+' clienti nel file, ma risultano <b>già tutti presenti</b> in archivio. Niente da importare.', true); ev.target.value=''; return; }
+      if(!confirm('IMPORTAZIONE CLIENTI\n\nFile: '+f.name+'\nClienti trovati: '+tot+'\nDa inserire: '+daInserire.length+(saltati?('\nGià presenti (saltati): '+saltati):'')+'\n\nVuoi importare adesso '+daInserire.length+' clienti nel cloud?')){ ev.target.value=''; setCliImportBanner('Importazione annullata.'); return; }
+      // inserimento a blocchi
+      let fatti=0; const blocco=200;
+      for(let i=0;i<daInserire.length;i+=blocco){
+        const parte=daInserire.slice(i,i+blocco);
+        const {error}=await sb.from('clienti').insert(parte);
+        if(error) throw error;
+        fatti+=parte.length;
+        setCliImportBanner('Importazione in corso… '+fatti+' / '+daInserire.length+' clienti');
+      }
+      ev.target.value='';
+      setCliImportBanner('✓ Importati <b>'+fatti+'</b> clienti'+(saltati?(' · '+saltati+' già presenti saltati'):'')+'. Li trovi nell\'elenco qui sotto.');
+      caricaClienti();
+    }catch(e){ ev.target.value=''; setCliImportBanner('Errore durante l\'importazione: '+esc(e.message||e), true); }
   }
   async function eliminaCliente(id){
     if(!confirm('Eliminare questo cliente?')) return;
