@@ -2528,6 +2528,13 @@ var qrcode = function() {
   .dt .actcell{display:flex;gap:6px}
   .dt .mini{padding:5px 11px;font-size:11px;border-radius:6px}
 
+  /* ---- Caselle modello stampa ---- */
+  .chk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 16px}
+  .chk{display:flex;align-items:center;gap:11px;font-size:13.5px;color:var(--ink);font-weight:500;cursor:pointer;
+    padding:10px 13px;border:1px solid var(--line);border-radius:8px;background:var(--paper);transition:.15s}
+  .chk:hover{border-color:var(--oxblood);background:#fffdfa}
+  .chk input{width:17px;height:17px;flex-shrink:0;accent-color:var(--oxblood);cursor:pointer}
+
   @media print{
     body{background:#fff;padding:0}
     body::before{display:none}
@@ -2555,6 +2562,8 @@ var qrcode = function() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0111 0M16 5.6a3 3 0 010 5.6M15.6 20a5.5 5.5 0 014.9-.2"/></svg><span>Clienti</span></button>
       <button class="navitem" id="tab-set" onclick="vista('set')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9l1.2-4h13.6L20 9M4 9h16v10a1 1 0 01-1 1H5a1 1 0 01-1-1V9zM9 20v-5h6v5"/></svg><span>La mia attività</span></button>
+      <button class="navitem" id="tab-stampa" onclick="vista('stampa')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-5a2 2 0 012-2h14a2 2 0 012 2v5a1 1 0 01-1 1h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg><span>Modello stampa</span></button>
     </nav>
     <div class="side-foot"><span class="ok-dot"></span> Sistema online · cloud</div>
   </aside>
@@ -2803,6 +2812,67 @@ var qrcode = function() {
     </section>
   </div>
 
+  <div id="view-stampa" style="display:none">
+    <section class="panel">
+      <div class="panel-h"><span class="dot"></span><h2>Modello di stampa QR</h2></div>
+      <div class="panel-b">
+        <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px">Scegli cosa stampare sull'etichetta QR. Le scelte valgono per tutte le stampe ed esportazioni (singole, lotto, ZIP, PDF). Le impostazioni sono salvate su questo dispositivo.</p>
+
+        <fieldset>
+          <legend>Intestazione</legend>
+          <div class="chk-grid">
+            <label class="chk"><input type="checkbox" id="st_logo"> Logo del macello</label>
+            <label class="chk"><input type="checkbox" id="st_nome"> Nome / ragione sociale</label>
+            <label class="chk"><input type="checkbox" id="st_indirizzo"> Indirizzo della ditta</label>
+            <label class="chk"><input type="checkbox" id="st_cittaBollo"> Comune e bollo CE</label>
+            <label class="chk"><input type="checkbox" id="st_barra"> Barra "SCHEDA ANAGRAFICA" + specie</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Corpo dell'etichetta</legend>
+          <div class="chk-grid">
+            <label class="chk"><input type="checkbox" id="st_marca"> Marca auricolare (grande)</label>
+            <label class="chk"><input type="checkbox" id="st_cliente"> Cliente destinatario</label>
+            <label class="chk"><input type="checkbox" id="st_reg"> Dicitura normativa</label>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Testo della dicitura normativa</label><input type="text" id="st_regTxt" placeholder="Ex Regolamento CE 1760/00"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Dati del capo da stampare</legend>
+          <div class="chk-grid">
+            <label class="chk"><input type="checkbox" id="st_f_specie"> Specie</label>
+            <label class="chk"><input type="checkbox" id="st_f_razza"> Razza</label>
+            <label class="chk"><input type="checkbox" id="st_f_sesso"> Sesso</label>
+            <label class="chk"><input type="checkbox" id="st_f_paese"> Paese di nascita</label>
+            <label class="chk"><input type="checkbox" id="st_f_allev"> Allevamento</label>
+            <label class="chk"><input type="checkbox" id="st_f_stalla"> Codice stalla</label>
+            <label class="chk"><input type="checkbox" id="st_f_macello"> Macello (CE)</label>
+            <label class="chk"><input type="checkbox" id="st_f_datamac"> Data macellazione</label>
+            <label class="chk"><input type="checkbox" id="st_f_lotto"> Partita / Lotto</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Piè di pagina</legend>
+          <div class="chk-grid">
+            <label class="chk"><input type="checkbox" id="st_contatti"> Contatti (P.IVA, Tel, Email)</label>
+            <label class="chk"><input type="checkbox" id="st_istruzione"> Istruzione di lettura</label>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Testo istruzione</label><input type="text" id="st_istrTxt" placeholder="INQUADRA CON LA FOTOCAMERA DEL TELEFONO"></div>
+        </fieldset>
+
+        <div class="banner" id="stampaBanner" style="display:none"></div>
+        <div class="actions">
+          <button class="btn-primary" onclick="salvaStampaCfg()">Salva modello</button>
+          <button class="btn-ghost" onclick="anteprimaStampa()">👁 Anteprima etichetta</button>
+          <button class="btn-ghost" onclick="ripristinaStampa()">Ripristina predefiniti</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <div id="view-clienti" style="display:none">
     <section class="panel">
       <div class="panel-h"><span class="dot"></span><h2>Clienti</h2></div>
@@ -2896,11 +2966,12 @@ var qrcode = function() {
 
   /* ---------------- Pagine / navigazione ---------------- */
   function vista(v){
-    ['gen','archivio','set','clienti'].forEach(x=>{ const el=$('view-'+x); if(el) el.style.display=(x===v?'block':'none'); const t=$('tab-'+x); if(t) t.classList.toggle('active', x===v); });
-    const titoli={gen:['Generatore QR','Dal MOD 4 al QR code in un click'],archivio:['Archivio MOD 4','Carica, filtra e stampa i MOD 4'],clienti:['Clienti','Anagrafica dei destinatari'],set:['La mia attività','Dati e logo del macello']};
+    ['gen','archivio','set','clienti','stampa'].forEach(x=>{ const el=$('view-'+x); if(el) el.style.display=(x===v?'block':'none'); const t=$('tab-'+x); if(t) t.classList.toggle('active', x===v); });
+    const titoli={gen:['Generatore QR','Dal MOD 4 al QR code in un click'],archivio:['Archivio MOD 4','Carica, filtra e stampa i MOD 4'],clienti:['Clienti','Anagrafica dei destinatari'],set:['La mia attività','Dati e logo del macello'],stampa:['Modello stampa','Scegli cosa stampare sull\'etichetta']};
     const t=titoli[v]; if(t&&$('secTitle')){ $('secTitle').textContent=t[0]; $('secSub').textContent=t[1]; }
     if(v==='clienti') caricaClienti();
     if(v==='archivio'){ caricaClienti(); renderBatch(); caricaArchivio(); }
+    if(v==='stampa') popolaFormStampa();
     window.scrollTo(0,0);
   }
 
@@ -3318,6 +3389,7 @@ var qrcode = function() {
   }
 
   // avvio: carico i dati dal cloud
+  caricaStampaCfg();
   caricaAttivita();
   caricaClienti();
 
@@ -3517,48 +3589,99 @@ var qrcode = function() {
     if(line) lines.push(line); return lines.length?lines:[''];
   }
 
+  /* ---------------- Modello di stampa ---------------- */
+  const STAMPA_DEFAULT={ logo:true, nome:true, indirizzo:true, cittaBollo:true, barra:true,
+    marca:true, cliente:true, reg:true, regTxt:'Ex Regolamento CE 1760/00',
+    f_specie:true, f_razza:true, f_sesso:true, f_paese:true, f_allev:true, f_stalla:true, f_macello:true, f_datamac:true, f_lotto:true,
+    contatti:true, istruzione:true, istrTxt:'INQUADRA CON LA FOTOCAMERA DEL TELEFONO' };
+  let stampaCfg=Object.assign({}, STAMPA_DEFAULT);
+  const ST_CHK=['logo','nome','indirizzo','cittaBollo','barra','marca','cliente','reg','f_specie','f_razza','f_sesso','f_paese','f_allev','f_stalla','f_macello','f_datamac','f_lotto','contatti','istruzione'];
+  function setStampaBanner(html,err){ const b=$('stampaBanner'); if(!b) return; b.innerHTML=html; b.className='banner'+(err?' err':''); b.style.display='block'; }
+  function caricaStampaCfg(){ try{ const raw=localStorage.getItem('stampaCfg_v1'); if(raw){ stampaCfg=Object.assign({}, STAMPA_DEFAULT, JSON.parse(raw)); } }catch(e){} }
+  function popolaFormStampa(){
+    ST_CHK.forEach(k=>{ const el=$('st_'+k); if(el) el.checked=!!stampaCfg[k]; });
+    if($('st_regTxt')) $('st_regTxt').value=stampaCfg.regTxt||'';
+    if($('st_istrTxt')) $('st_istrTxt').value=stampaCfg.istrTxt||'';
+  }
+  function leggiFormStampa(){
+    ST_CHK.forEach(k=>{ const el=$('st_'+k); if(el) stampaCfg[k]=el.checked; });
+    if($('st_regTxt')) stampaCfg.regTxt=$('st_regTxt').value;
+    if($('st_istrTxt')) stampaCfg.istrTxt=$('st_istrTxt').value;
+  }
+  function salvaStampaCfg(silent){
+    leggiFormStampa();
+    try{ localStorage.setItem('stampaCfg_v1', JSON.stringify(stampaCfg)); }catch(e){}
+    if(!silent) setStampaBanner('✓ Modello di stampa salvato. Verrà usato per tutte le etichette.');
+  }
+  function ripristinaStampa(){ stampaCfg=Object.assign({}, STAMPA_DEFAULT); popolaFormStampa(); salvaStampaCfg(true); setStampaBanner('Modello riportato ai valori predefiniti.'); }
+  function anteprimaStampa(){
+    salvaStampaCfg(true);
+    if(!$('f_id').value.trim()){
+      fillFormFromCapo({marca_auricolare:'IT 123456789012', codice_elettronico:'012345678901234', specie:'Bovino', razza:'Frisona',
+        sesso:'Femmina', data_nascita:'2024-03-15', paese_nascita:'Italia', allevamento:'Allevamento Esempio — Comune (XX)',
+        codice_stalla:'001AB002', asl:'ASL Esempio', stato_sanitario:'TBC: indenne', doc_accompagnamento:'IT000XX000202600001',
+        macello:(settings.bollo||'1429M'), data_macellazione:'2026-06-01', peso:'320', lotto:'001', note:'', cliente_id:'' });
+    }
+    if(costruisciQR()===null){ setStampaBanner('Impossibile generare l\'anteprima.',true); return; }
+    apriEsportazione(false);
+  }
+
   function makeLabelCanvas(){
     if(!lastQR) return null;
+    const cfg=stampaCfg;
     const W=720, M=46, padTop=36, qrBox=340, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
     const count=lastQR.getModuleCount(), total=count+8, cell=Math.max(1,Math.floor(qrBox/total)), qrPx=cell*total;
     const meas=document.createElement('canvas').getContext('2d');
 
     // ---- intestazione attività ----
-    const hasLogo=!!(logoImg && logoImg.complete && logoImg.naturalWidth>0);
+    const hasLogo=!!(cfg.logo && logoImg && logoImg.complete && logoImg.naturalWidth>0);
     const logoH=58, logoW=hasLogo?Math.min(210,Math.round(logoH*(logoImg.naturalWidth/logoImg.naturalHeight))):0;
     const cLine3=[ (settings.citta||'').trim(), settings.bollo?('Approv. CE '+settings.bollo.trim()):'' ].filter(Boolean).join('    ·    ');
     const headLines=[];
-    if((settings.nome||'').trim())      headLines.push(['name',settings.nome.trim()]);
-    if((settings.indirizzo||'').trim()) headLines.push(['sub',settings.indirizzo.trim()]);
-    if(cLine3)                          headLines.push(['sub',cLine3]);
+    if(cfg.nome && (settings.nome||'').trim())           headLines.push(['name',settings.nome.trim()]);
+    if(cfg.indirizzo && (settings.indirizzo||'').trim()) headLines.push(['sub',settings.indirizzo.trim()]);
+    if(cfg.cittaBollo && cLine3)                          headLines.push(['sub',cLine3]);
     const textBlockH=headLines.reduce((s,[t])=>s+(t==='name'?28:20),0);
     const hasCompany=hasLogo||headLines.length>0;
     const companyH=hasCompany?(24+Math.max(hasLogo?logoH:0,textBlockH)+20):0;
-    const baseTop=companyH+barH;
+    const BH=cfg.barra?barH:0;
+    const baseTop=companyH+BH;
 
     // ---- campi sotto al QR ----
-    const campi=[
-      ['Specie',$('f_specie').value],['Razza',$('f_razza').value],['Sesso',$('f_sesso').value],
-      ['Paese di nascita',$('f_paesenascita').value],['Allevamento',$('f_allev').value],
-      ['Codice stalla',$('f_codstalla').value],['Macello (CE)',$('f_macello').value],
-      ['Data macellazione',fmtDate($('f_datamac').value)],['Partita / Lotto',$('f_lotto').value],
-    ].filter(([k,v])=>v && String(v).trim());
     const _cliId=$('f_cliente')?$('f_cliente').value:'';
-    const _cli=_cliId?clientiCache.find(c=>c.id===_cliId):null;
-    if(_cli){ const _addr=[_cli.indirizzo,_cli.citta].filter(Boolean).join(', '); campi.unshift(['Cliente', _cli.nome+(_addr?(' ('+_addr+')'):'')]); }
+    const _cli=(cfg.cliente && _cliId)?clientiCache.find(c=>c.id===_cliId):null;
+    const campi=[];
+    if(_cli){ const _addr=[_cli.indirizzo,_cli.citta].filter(Boolean).join(', '); campi.push(['Cliente', _cli.nome+(_addr?(' ('+_addr+')'):'')]); }
+    const pushF=(cond,k,v)=>{ if(cond && v && String(v).trim()) campi.push([k, String(v).trim()]); };
+    pushF(cfg.f_specie,'Specie',$('f_specie').value);
+    pushF(cfg.f_razza,'Razza',$('f_razza').value);
+    pushF(cfg.f_sesso,'Sesso',$('f_sesso').value);
+    pushF(cfg.f_paese,'Paese di nascita',$('f_paesenascita').value);
+    pushF(cfg.f_allev,'Allevamento',$('f_allev').value);
+    pushF(cfg.f_stalla,'Codice stalla',$('f_codstalla').value);
+    pushF(cfg.f_macello,'Macello (CE)',$('f_macello').value);
+    pushF(cfg.f_datamac,'Data macellazione',fmtDate($('f_datamac').value));
+    pushF(cfg.f_lotto,'Partita / Lotto',$('f_lotto').value);
     const labelColW=205, valX=M+labelColW, valMaxW=W-valX-M;
     meas.font='600 19px sans-serif';
     const rows=campi.map(([k,v])=>({k, lines:wrapText(meas, String(v).trim(), valMaxW)}));
-    const listH=rows.reduce((s,r)=>s+r.lines.length*lineH+rowGap,0)+12;
+    const listH=rows.length?(rows.reduce((s,r)=>s+r.lines.length*lineH+rowGap,0)+12):0;
+
+    // ---- marca auricolare (altezza) ----
+    let marcaBlockH=0;
+    if(cfg.marca) marcaBlockH += (capH+18)+24;
+    const hasReg = cfg.reg && (cfg.regTxt||'').trim();
+    if(hasReg) marcaBlockH += 18;
 
     // ---- footer contatti ----
-    const contactStr=[ settings.piva?('P.IVA '+settings.piva):'', settings.tel?('Tel '+settings.tel):'', (settings.email||'') ].filter(Boolean).join('    ·    ');
+    const contactStr = cfg.contatti ? [ settings.piva?('P.IVA '+settings.piva):'', settings.tel?('Tel '+settings.tel):'', (settings.email||'') ].filter(Boolean).join('    ·    ') : '';
     meas.font='600 14px monospace';
     const contactLines=contactStr?wrapText(meas, contactStr, W-2*M):[];
     const contactsH=contactLines.length*20+(contactLines.length?8:0);
-    const footBlock=6+22+contactsH+26;
+    const hasIstr = cfg.istruzione && (cfg.istrTxt||'').trim();
+    const footBlock=6+22+contactsH+(hasIstr?26:6);
 
-    const H=baseTop+padTop+qrPx+gapQR+(capH+18)+24+18+listH+footBlock;
+    const H=baseTop+padTop+qrPx+gapQR+marcaBlockH+listH+footBlock;
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const ctx=c.getContext('2d');
     ctx.fillStyle='#fbfaf6'; ctx.fillRect(0,0,W,H);
@@ -3575,10 +3698,12 @@ var qrcode = function() {
     }
 
     // barra scura
-    ctx.fillStyle='#1c1a17'; ctx.fillRect(0,companyH,W,barH);
-    ctx.fillStyle='#f4f1ea'; ctx.textBaseline='middle'; ctx.font='600 20px monospace';
-    ctx.textAlign='left';  ctx.fillText('SCHEDA ANAGRAFICA',28,companyH+barH/2+1);
-    ctx.textAlign='right'; ctx.fillText(($('f_specie').value||'CAPO').toUpperCase(),W-28,companyH+barH/2+1);
+    if(cfg.barra){
+      ctx.fillStyle='#1c1a17'; ctx.fillRect(0,companyH,W,barH);
+      ctx.fillStyle='#f4f1ea'; ctx.textBaseline='middle'; ctx.font='600 20px monospace';
+      ctx.textAlign='left';  ctx.fillText('SCHEDA ANAGRAFICA',28,companyH+barH/2+1);
+      ctx.textAlign='right'; ctx.fillText(($('f_specie').value||'CAPO').toUpperCase(),W-28,companyH+barH/2+1);
+    }
 
     // QR
     const qx=(W-qrPx)/2, qy=baseTop+padTop;
@@ -3589,9 +3714,11 @@ var qrcode = function() {
     // marca auricolare
     let y=qy+qrPx+gapQR;
     ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-    ctx.fillStyle='#8a7f6e'; ctx.font='600 14px monospace'; ctx.fillText('MARCA AURICOLARE',W/2,y); y+=capH+18;
-    ctx.fillStyle='#1c1a17'; ctx.font='700 32px monospace'; ctx.fillText($('f_id').value.trim(),W/2,y); y+=24;
-    ctx.fillStyle='#8a7f6e'; ctx.font='600 12px monospace'; ctx.fillText('Ex Regolamento CE 1760/00',W/2,y); y+=18;
+    if(cfg.marca){
+      ctx.fillStyle='#8a7f6e'; ctx.font='600 14px monospace'; ctx.fillText('MARCA AURICOLARE',W/2,y); y+=capH+18;
+      ctx.fillStyle='#1c1a17'; ctx.font='700 32px monospace'; ctx.fillText($('f_id').value.trim(),W/2,y); y+=24;
+    }
+    if(hasReg){ ctx.fillStyle='#8a7f6e'; ctx.font='600 12px monospace'; ctx.fillText(cfg.regTxt.trim(),W/2,y); y+=18; }
 
     // elenco campi
     ctx.textBaseline='top';
@@ -3610,8 +3737,7 @@ var qrcode = function() {
     let fy=y+22;
     if(contactLines.length){ ctx.fillStyle='#5a554c'; ctx.font='600 14px monospace';
       contactLines.forEach((ln,i)=>ctx.fillText(ln,W/2,fy+i*20)); fy+=contactLines.length*20+8; }
-    ctx.fillStyle='#8a7f6e'; ctx.font='600 14px monospace';
-    ctx.fillText('INQUADRA CON LA FOTOCAMERA DEL TELEFONO',W/2,fy+2);
+    if(hasIstr){ ctx.fillStyle='#8a7f6e'; ctx.font='600 14px monospace'; ctx.fillText(cfg.istrTxt.trim(),W/2,fy+2); }
     return c;
   }
 
