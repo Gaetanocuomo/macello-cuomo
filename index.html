@@ -2476,8 +2476,8 @@ var qrcode = function() {
       </div>
     </div>
     <div class="meta">
-      <div>SISTEMA <b>OFFLINE</b></div>
-      <div>DATI NEL QR · NESSUN SERVER</div>
+      <div>SISTEMA <b>ONLINE</b></div>
+      <div>ARCHIVIO NEL CLOUD</div>
       <div id="todayMeta">—</div>
     </div>
   </header>
@@ -3158,7 +3158,7 @@ var qrcode = function() {
 
   function makeLabelCanvas(){
     if(!lastQR) return null;
-    const W=720, M=46, padTop=36, qrBox=440, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
+    const W=720, M=46, padTop=36, qrBox=340, gapQR=30, capH=20, barH=56, lineH=27, rowGap=9;
     const count=lastQR.getModuleCount(), total=count+8, cell=Math.max(1,Math.floor(qrBox/total)), qrPx=cell*total;
     const meas=document.createElement('canvas').getContext('2d');
 
@@ -3182,6 +3182,9 @@ var qrcode = function() {
       ['Codice stalla',$('f_codstalla').value],['Macello (CE)',$('f_macello').value],
       ['Data macellazione',fmtDate($('f_datamac').value)],['Partita / Lotto',$('f_lotto').value],
     ].filter(([k,v])=>v && String(v).trim());
+    const _cliId=$('f_cliente')?$('f_cliente').value:'';
+    const _cli=_cliId?clientiCache.find(c=>c.id===_cliId):null;
+    if(_cli){ const _addr=[_cli.indirizzo,_cli.citta].filter(Boolean).join(', '); campi.unshift(['Cliente', _cli.nome+(_addr?(' ('+_addr+')'):'')]); }
     const labelColW=205, valX=M+labelColW, valMaxW=W-valX-M;
     meas.font='600 19px sans-serif';
     const rows=campi.map(([k,v])=>({k, lines:wrapText(meas, String(v).trim(), valMaxW)}));
@@ -3194,7 +3197,7 @@ var qrcode = function() {
     const contactsH=contactLines.length*20+(contactLines.length?8:0);
     const footBlock=6+22+contactsH+26;
 
-    const H=baseTop+padTop+qrPx+gapQR+(capH+18)+22+listH+footBlock;
+    const H=baseTop+padTop+qrPx+gapQR+(capH+18)+24+18+listH+footBlock;
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const ctx=c.getContext('2d');
     ctx.fillStyle='#fbfaf6'; ctx.fillRect(0,0,W,H);
@@ -3226,7 +3229,8 @@ var qrcode = function() {
     let y=qy+qrPx+gapQR;
     ctx.textAlign='center'; ctx.textBaseline='alphabetic';
     ctx.fillStyle='#8a7f6e'; ctx.font='600 14px monospace'; ctx.fillText('MARCA AURICOLARE',W/2,y); y+=capH+18;
-    ctx.fillStyle='#1c1a17'; ctx.font='700 32px monospace'; ctx.fillText($('f_id').value.trim(),W/2,y); y+=22;
+    ctx.fillStyle='#1c1a17'; ctx.font='700 32px monospace'; ctx.fillText($('f_id').value.trim(),W/2,y); y+=24;
+    ctx.fillStyle='#8a7f6e'; ctx.font='600 12px monospace'; ctx.fillText('Ex Regolamento CE 1760/00',W/2,y); y+=18;
 
     // elenco campi
     ctx.textBaseline='top';
