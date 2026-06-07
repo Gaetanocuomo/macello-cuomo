@@ -3959,11 +3959,10 @@ var qrcode = function() {
   function fmtDate(v){ if(!v) return ''; const [y,m,d]=v.split('-'); return `${d}/${m}/${y}`; }
   function buildText(){
     const L=['SCHEDA ANAGRAFICA ANIMALE','========================']; const add=(k,v)=>{ if(v&&v.trim())L.push(`${k}: ${v.trim()}`); };
-    add('ID / Marca auricolare',$('f_id').value); add('Codice elettronico',$('f_elettr').value);
+    add('ID / Marca auricolare',$('f_id').value);
     add('Specie',$('f_specie').value); add('Razza',$('f_razza').value); add('Sesso',$('f_sesso').value);
     add('Data di nascita',fmtDate($('f_nascita').value)); add('Paese di nascita',$('f_paesenascita').value);
-    add('Allevamento',$('f_allev').value); add('Cod. stalla',$('f_codstalla').value); add('ASL',$('f_asl').value);
-    add('Stato sanitario',$('f_sanita').value); add('Doc. accompagn. (MOD4)',$('f_docacc').value);
+    add('Allevamento',$('f_allev').value); add('Cod. stalla',$('f_codstalla').value);
     add('Macello (CE)',$('f_macello').value); add('Data macellazione',fmtDate($('f_datamac').value));
     add('Peso (kg)',$('f_peso').value); add('Partita/Lotto',$('f_lotto').value);
     const _cliId=$('f_cliente')?$('f_cliente').value:''; const _cli=_cliId?clientiCache.find(c=>c.id===_cliId):null;
