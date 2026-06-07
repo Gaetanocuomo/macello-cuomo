@@ -2926,10 +2926,21 @@ var qrcode = function() {
           <div class="field" style="margin-top:12px"><label>Testo istruzione</label><input type="text" id="st_istrTxt" placeholder="INQUADRA CON LA FOTOCAMERA DEL TELEFONO"></div>
         </fieldset>
 
+        <fieldset>
+          <legend>Formato etichetta adesiva</legend>
+          <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.55;margin:0 0 14px">Imposta la misura dell'etichetta (per stampanti di etichette o fogli adesivi). Con "Anteprima su etichetta" vedi e stampi in questo formato. La stampa normale resta sul foglio A4 con i 5 cm di margine in alto.</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px 16px">
+            <div class="field"><label>Larghezza (mm)</label><input type="number" id="st_etlW" min="20" step="1" placeholder="100"></div>
+            <div class="field"><label>Altezza (mm)</label><input type="number" id="st_etlH" min="20" step="1" placeholder="70"></div>
+            <div class="field"><label>Margine interno (mm)</label><input type="number" id="st_etlM" min="0" step="1" placeholder="3"></div>
+          </div>
+        </fieldset>
+
         <div class="banner" id="stampaBanner" style="display:none"></div>
         <div class="actions">
           <button class="btn-primary" onclick="salvaStampaCfg()">Salva modello</button>
-          <button class="btn-ghost" onclick="anteprimaStampa()">👁 Anteprima etichetta</button>
+          <button class="btn-ghost" onclick="anteprimaStampa()">👁 Anteprima su foglio A4</button>
+          <button class="btn-ghost" onclick="anteprimaEtichetta()">🏷 Anteprima su etichetta</button>
           <button class="btn-ghost" onclick="ripristinaStampa()">Ripristina predefiniti</button>
         </div>
       </div>
@@ -3386,7 +3397,7 @@ var qrcode = function() {
   ];
   const ARCH_MONO=new Set(['marca_auricolare','codice_elettronico','codice_stalla','doc_accompagnamento','macello']);
   const ARCH_COLS_VIS=[
-    {l:'Marca auricolare',k:'marca_auricolare'},{l:'Specie',k:'specie'},{l:'Razza',k:'razza'},
+    {l:'Marca auricolare',k:'marca_auricolare'},{l:'Lotto',k:'lotto'},{l:'Specie',k:'specie'},{l:'Razza',k:'razza'},
     {l:'Sesso',k:'sesso'},{l:'Nascita',k:'data_nascita'},{l:'Paese',k:'paese_nascita'},
     {l:'Allevamento',k:'allevamento'},{l:'Cod. stalla',k:'codice_stalla'}
   ];
@@ -3427,7 +3438,7 @@ var qrcode = function() {
     const rows=pageItems.map(c=>{ const i=archivioCache.indexOf(c);
       const tds=ARCH_COLS_VIS.map(col=>{ let attr=''; if(ARCH_MONO.has(col.k)) attr=' class="mono"'; if(col.k==='marca_auricolare') attr=' class="mono" style="font-weight:600"'; if(col.k==='allevamento') attr=' class="allev"';
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
-      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-ghost mini iconbtn" title="Dettagli — vedi tutti i dati" onclick="dettagliCapo(\''+c.id+'\')">🔍</button><button class="btn-ghost mini iconbtn" title="Modifica tutti i campi" onclick="modificaCapo(\''+c.id+'\')">✏️</button><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini iconbtn btn-del" title="Elimina" onclick="eliminaCapo(\''+c.id+'\')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button></div></td></tr>';
+      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-ghost mini iconbtn" title="Dettagli — vedi tutti i dati" onclick="dettagliCapo(\''+c.id+'\')">🔍</button><button class="btn-ghost mini iconbtn" title="Modifica tutti i campi" onclick="modificaCapo(\''+c.id+'\')">✏️</button><button class="btn-primary mini iconbtn" title="Stampa etichetta" onclick="etichettaArchivio('+i+')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></button><button class="btn-ghost mini iconbtn btn-del" title="Elimina" onclick="eliminaCapo(\''+c.id+'\')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button></div></td></tr>';
     }).join('');
     box.innerHTML=bulk
       +pagerHtml('archVai',archPage,pages,list.length)
@@ -4024,7 +4035,8 @@ var qrcode = function() {
   const STAMPA_DEFAULT={ logo:true, nome:true, indirizzo:true, cittaBollo:true, barra:true,
     marca:true, cliente:true, reg:true, regTxt:'Ex Regolamento CE 1760/00',
     f_specie:true, f_razza:true, f_sesso:true, f_paese:true, f_allev:true, f_stalla:true, f_macello:true, f_datamac:true, f_lotto:true,
-    contatti:true, istruzione:true, istrTxt:'INQUADRA CON LA FOTOCAMERA DEL TELEFONO' };
+    contatti:true, istruzione:true, istrTxt:'INQUADRA CON LA FOTOCAMERA DEL TELEFONO',
+    etlW:100, etlH:70, etlM:3 };
   let stampaCfg=Object.assign({}, STAMPA_DEFAULT);
   const ST_CHK=['logo','nome','indirizzo','cittaBollo','barra','marca','cliente','reg','f_specie','f_razza','f_sesso','f_paese','f_allev','f_stalla','f_macello','f_datamac','f_lotto','contatti','istruzione'];
   function setStampaBanner(html,err){ const b=$('stampaBanner'); if(!b) return; b.innerHTML=html; b.className='banner'+(err?' err':''); b.style.display='block'; }
@@ -4033,11 +4045,17 @@ var qrcode = function() {
     ST_CHK.forEach(k=>{ const el=$('st_'+k); if(el) el.checked=!!stampaCfg[k]; });
     if($('st_regTxt')) $('st_regTxt').value=stampaCfg.regTxt||'';
     if($('st_istrTxt')) $('st_istrTxt').value=stampaCfg.istrTxt||'';
+    if($('st_etlW')) $('st_etlW').value=stampaCfg.etlW||100;
+    if($('st_etlH')) $('st_etlH').value=stampaCfg.etlH||70;
+    if($('st_etlM')) $('st_etlM').value=(stampaCfg.etlM==null?3:stampaCfg.etlM);
   }
   function leggiFormStampa(){
     ST_CHK.forEach(k=>{ const el=$('st_'+k); if(el) stampaCfg[k]=el.checked; });
     if($('st_regTxt')) stampaCfg.regTxt=$('st_regTxt').value;
     if($('st_istrTxt')) stampaCfg.istrTxt=$('st_istrTxt').value;
+    if($('st_etlW')) stampaCfg.etlW=Math.max(20, parseFloat($('st_etlW').value)||100);
+    if($('st_etlH')) stampaCfg.etlH=Math.max(20, parseFloat($('st_etlH').value)||70);
+    if($('st_etlM')) stampaCfg.etlM=Math.max(0, parseFloat($('st_etlM').value)||0);
   }
   function salvaStampaCfg(silent){
     leggiFormStampa();
@@ -4062,6 +4080,34 @@ var qrcode = function() {
     }
     if(costruisciQR()===null){ setStampaBanner('Impossibile generare l\'anteprima.',true); return; }
     apriEsportazione(false);
+  }
+  // ---- Stampa nel formato etichetta parametrizzato ----
+  function stampaSuEtichetta(){
+    leggiFormStampa();
+    const W=Math.max(20, parseFloat(stampaCfg.etlW)||100);
+    const H=Math.max(20, parseFloat(stampaCfg.etlH)||70);
+    const Mg=Math.max(0, parseFloat(stampaCfg.etlM)||0);
+    const iw=Math.max(5, W-2*Mg), ih=Math.max(5, H-2*Mg);
+    let s=document.getElementById('etlPage');
+    if(!s){ s=document.createElement('style'); s.id='etlPage'; document.head.appendChild(s); }
+    s.textContent='@page{ size:'+W+'mm '+H+'mm; margin:'+Mg+'mm } '
+      +'@media print{ #printArea img{ width:auto!important; height:auto!important; max-width:'+iw+'mm!important; max-height:'+ih+'mm!important; object-fit:contain } }';
+    const cleanup=()=>{ const e=document.getElementById('etlPage'); if(e) e.remove(); window.removeEventListener('afterprint',cleanup); };
+    window.addEventListener('afterprint',cleanup);
+    try{ window.print(); }catch(e){ alert('Per stampare, apri il file scaricato nel tuo browser.'); cleanup(); }
+  }
+  function anteprimaEtichetta(){
+    salvaStampaCfg(true);
+    if(!$('f_id').value.trim()){
+      fillFormFromCapo({marca_auricolare:'IT 123456789012', codice_elettronico:'012345678901234', specie:'Bovino', razza:'Frisona',
+        sesso:'Femmina', data_nascita:'2024-03-15', paese_nascita:'Italia', allevamento:'Allevamento Esempio — Comune (XX)',
+        codice_stalla:'001AB002', asl:'ASL Esempio', stato_sanitario:'TBC: indenne', doc_accompagnamento:'IT000XX000202600001',
+        macello:(settings.bollo||'1429M'), data_macellazione:'2026-06-01', peso:'320', lotto:'001', note:'', cliente_id:'' });
+    }
+    if(costruisciQR()===null){ setStampaBanner('Impossibile generare l\'anteprima.',true); return; }
+    const cv=makeLabelCanvas(); if(!cv){ setStampaBanner('Impossibile generare l\'anteprima.',true); return; }
+    $('printArea').innerHTML='<div style="text-align:center"><img src="'+cv.toDataURL('image/png')+'"></div>';
+    stampaSuEtichetta();
   }
 
   function makeLabelCanvas(){
@@ -4089,7 +4135,6 @@ var qrcode = function() {
     const _cliId=$('f_cliente')?$('f_cliente').value:'';
     const _cli=(cfg.cliente && _cliId)?clientiCache.find(c=>c.id===_cliId):null;
     const campi=[];
-    if(_cli){ const _addr=[_cli.indirizzo,_cli.citta].filter(Boolean).join(', '); campi.push(['Cliente', _cli.nome+(_addr?(' ('+_addr+')'):'')]); }
     const pushF=(cond,k,v)=>{ if(cond && v && String(v).trim()) campi.push([k, String(v).trim()]); };
     pushF(cfg.f_specie,'Specie',$('f_specie').value);
     pushF(cfg.f_razza,'Razza',$('f_razza').value);
@@ -4099,6 +4144,7 @@ var qrcode = function() {
     pushF(cfg.f_stalla,'Codice stalla',$('f_codstalla').value);
     pushF(cfg.f_macello,'Macello (CE)',$('f_macello').value);
     pushF(cfg.f_datamac,'Data macellazione',fmtDate($('f_datamac').value));
+    if(_cli){ const _addr=[_cli.indirizzo,_cli.citta].filter(Boolean).join(', '); campi.push(['Cliente', _cli.nome+(_addr?(' ('+_addr+')'):'')]); }
     pushF(cfg.f_lotto,'Partita / Lotto',$('f_lotto').value);
     const labelColW=205, valX=M+labelColW, valMaxW=W-valX-M;
     meas.font='600 19px sans-serif';
@@ -4202,7 +4248,8 @@ var qrcode = function() {
           <img id="ovImg" style="width:100%;max-width:560px;border:1.5px solid #d8d2c5;background:#fff" alt="Etichetta QR">
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
             <a id="ovDownload" download style="font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:14px;text-decoration:none;border:2px solid #6d211a;background:#8a2b22;color:#fff;padding:11px 18px;border-radius:2px">⬇ Scarica</a>
-            <button id="ovPrint" style="font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:2px solid #1c1a17;background:transparent;color:#1c1a17;padding:11px 18px;border-radius:2px">🖨 Stampa</button>
+            <button id="ovPrint" style="font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:2px solid #1c1a17;background:transparent;color:#1c1a17;padding:11px 18px;border-radius:2px">🖨 Stampa A4</button>
+            <button id="ovPrintEtl" style="font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:2px solid #1c1a17;background:transparent;color:#1c1a17;padding:11px 18px;border-radius:2px">🏷 Stampa etichetta</button>
           </div>
           <p style="font-size:11px;color:#a8a193;margin-top:12px;font-family:monospace">Scarica e Stampa funzionano al meglio aprendo il file nel browser.</p>
         </div></div>`;
@@ -4212,6 +4259,10 @@ var qrcode = function() {
       $('ovPrint').onclick=()=>{
         $('printArea').innerHTML=`<div style="text-align:center"><img src="${$('ovImg').src}" style="max-width:340px"></div>`;
         try{ window.print(); }catch(e){ alert('Per stampare, apri il file scaricato nel tuo browser.'); }
+      };
+      $('ovPrintEtl').onclick=()=>{
+        $('printArea').innerHTML=`<div style="text-align:center"><img src="${$('ovImg').src}"></div>`;
+        stampaSuEtichetta();
       };
     }
     $('ovImg').src=url;
