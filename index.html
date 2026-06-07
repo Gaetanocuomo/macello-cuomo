@@ -3965,7 +3965,10 @@ var qrcode = function() {
     add('Allevamento',$('f_allev').value); add('Cod. stalla',$('f_codstalla').value); add('ASL',$('f_asl').value);
     add('Stato sanitario',$('f_sanita').value); add('Doc. accompagn. (MOD4)',$('f_docacc').value);
     add('Macello (CE)',$('f_macello').value); add('Data macellazione',fmtDate($('f_datamac').value));
-    add('Peso (kg)',$('f_peso').value); add('Partita/Lotto',$('f_lotto').value); add('Note',$('f_note').value);
+    add('Peso (kg)',$('f_peso').value); add('Partita/Lotto',$('f_lotto').value);
+    const _cliId=$('f_cliente')?$('f_cliente').value:''; const _cli=_cliId?clientiCache.find(c=>c.id===_cliId):null;
+    if(_cli){ const _ad=[_cli.indirizzo,_cli.citta].filter(Boolean).join(', '); add('Cliente', _cli.nome+(_ad?(' ('+_ad+')'):'')); }
+    add('Note',$('f_note').value);
     return L.join('\n');
   }
   function costruisciQR(){
