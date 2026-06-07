@@ -2547,6 +2547,13 @@ var qrcode = function() {
   .chk:hover{border-color:var(--oxblood);background:#fffdfa}
   .chk input{width:17px;height:17px;flex-shrink:0;accent-color:var(--oxblood);cursor:pointer}
 
+  /* ---- Selezione multipla / azioni di massa ---- */
+  .bulkbar{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:12px;padding:10px 14px;
+    background:rgba(125,42,49,.08);border:1px solid var(--oxblood);border-radius:9px}
+  .bulkbar .cnt{font-weight:700;color:var(--oxblood);font-size:13px;margin-right:6px}
+  .dt input[type=checkbox]{width:16px;height:16px;accent-color:var(--oxblood);cursor:pointer;margin:0}
+  .dt th.selcell,.dt td.selcell{text-align:center;width:40px;padding-left:12px;padding-right:8px}
+
   @media print{
     body{background:#fff;padding:0}
     body::before{display:none}
@@ -3061,7 +3068,7 @@ var qrcode = function() {
       clientiCache=data||[]; renderClienti(); popolaTendinaClienti(); popolaFiltroClienti();
     }catch(e){ $('clientiLista').innerHTML='<p class="banner err" style="display:block">Errore: '+esc(e.message||e)+'</p>'; }
   }
-  let editCliente=null;
+  let editCliente=null, cliSel=new Set(), cliVisibleIds=[];
   function azzeraFiltriClienti(){ if($('cli_search')) $('cli_search').value=''; renderClienti(); }
   function renderClienti(){
     const box=$('clientiLista'); if(!box) return;
@@ -3071,8 +3078,15 @@ var qrcode = function() {
     const list=clientiCache.filter(c=> !q || ((c.nome||'')+' '+(c.citta||'')+' '+(c.piva||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase().includes(q));
     if(cnt) cnt.textContent=list.length+' di '+clientiCache.length+' clienti';
     if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato.</p>'; return; }
+    cliVisibleIds=list.map(c=>c.id);
+    const bulk='<div class="bulkbar" id="cliBulk" style="'+(cliSel.size?'':'display:none')+'">'
+      +'<span class="cnt" id="cliSelCnt">'+cliSel.size+' selezionati</span>'
+      +'<button class="btn-ghost mini" onclick="eliminaClientiSelezionati()">🗑️ Elimina selezionati</button>'
+      +'<button class="btn-ghost mini" onclick="deselezionaCli()">Deseleziona tutto</button></div>';
+    const allChecked=cliVisibleIds.length>0 && cliVisibleIds.every(id=>cliSel.has(id));
     const head=['Nome / Ragione sociale','Indirizzo','Comune/Prov','P.IVA / CF','Telefono','Email','Note','Azioni'];
-    const rows=list.map(c=> '<tr>'+[
+    const thead='<tr><th class="selcell"><input type="checkbox" id="cliSelAll" onclick="toggleCliSelAll(this)" '+(allChecked?'checked':'')+'></th>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>';
+    const rows=list.map(c=> '<tr><td class="selcell"><input type="checkbox" onclick="toggleCliSel(\''+c.id+'\',this)" '+(cliSel.has(c.id)?'checked':'')+'></td>'+[
       '<td style="font-weight:600">'+esc(c.nome)+'</td>',
       '<td>'+esc(c.indirizzo)+'</td>',
       '<td>'+esc(c.citta)+'</td>',
@@ -3082,7 +3096,22 @@ var qrcode = function() {
       '<td>'+esc(c.note)+'</td>',
       '<td><div class="actcell"><button class="btn-primary mini" onclick="modificaCliente(\''+c.id+'\')">Modifica</button><button class="btn-ghost mini" onclick="eliminaCliente(\''+c.id+'\')">Elimina</button></div></td>'
     ].join('')+'</tr>').join('');
-    box.innerHTML='<div class="dt-wrap"><table class="dt"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+    box.innerHTML=bulk+'<div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  function aggiornaCliBulk(){
+    const bar=$('cliBulk'); if(bar) bar.style.display=cliSel.size?'flex':'none';
+    const c=$('cliSelCnt'); if(c) c.textContent=cliSel.size+' selezionati';
+    const all=$('cliSelAll'); if(all) all.checked = cliVisibleIds.length>0 && cliVisibleIds.every(id=>cliSel.has(id));
+  }
+  function toggleCliSel(id,cb){ if(cb.checked) cliSel.add(id); else cliSel.delete(id); aggiornaCliBulk(); }
+  function toggleCliSelAll(cb){ if(cb.checked) cliVisibleIds.forEach(id=>cliSel.add(id)); else cliVisibleIds.forEach(id=>cliSel.delete(id)); renderClienti(); }
+  function deselezionaCli(){ cliSel.clear(); renderClienti(); }
+  async function eliminaClientiSelezionati(){
+    const ids=[...cliSel]; if(!ids.length){ alert('Seleziona almeno un cliente.'); return; }
+    if(!confirm('Eliminare definitivamente '+ids.length+' clienti? L\'operazione non è reversibile.')) return;
+    if(!sb) return;
+    try{ const {error}=await sb.from('clienti').delete().in('id',ids); if(error) throw error; cliSel.clear(); caricaClienti(); }
+    catch(e){ setClienteBanner('Errore: '+esc(e.message||e), true); }
   }
   function modificaCliente(id){
     const c=clientiCache.find(x=>x.id===id); if(!c) return;
@@ -3178,6 +3207,7 @@ var qrcode = function() {
     {l:'Peso',k:'peso'},{l:'Lotto',k:'lotto'},{l:'Cliente',k:'_cliente'},{l:'Note',k:'note'}
   ];
   const ARCH_MONO=new Set(['marca_auricolare','codice_elettronico','codice_stalla','doc_accompagnamento','macello']);
+  let archSel=new Set(), archVisibleIds=[];
   function renderArchivio(){
     const box=$('archivioLista'); if(!box) return;
     const q=val('arch_search').toLowerCase().trim(), fs=val('arch_specie'), fx=val('arch_sesso'), fc=val('arch_cliente'), dal=val('arch_dal'), al=val('arch_al');
@@ -3194,24 +3224,55 @@ var qrcode = function() {
       list.sort((a,b)=>{ const va=k==='_cliente'?clienteName(a.cliente_id):String(a[k]??''); const vb=k==='_cliente'?clienteName(b.cliente_id):String(b[k]??'');
         return va.localeCompare(vb,'it',{numeric:true,sensitivity:'base'})*d; });
     }
+    archVisibleIds=list.map(c=>c.id);
     const cnt=$('archConteggio'); if(cnt) cnt.textContent = archivioCache.length ? (list.length+' di '+archivioCache.length+' capi mostrati') : '';
     if(!archivioCache.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun capo in archivio. Generane uno e premi "Salva nell\'archivio".</p>'; return; }
     if(!list.length){ box.innerHTML='<p style="color:var(--ink-soft);font-size:13px">Nessun risultato con i filtri impostati.</p>'; return; }
+    const bulk='<div class="bulkbar" id="archBulk" style="'+(archSel.size?'':'display:none')+'">'
+      +'<span class="cnt" id="archSelCnt">'+archSel.size+' selezionati</span>'
+      +'<button class="btn-primary mini" onclick="stampaArchSelezionati()">🖨️ Genera / stampa etichette</button>'
+      +'<button class="btn-ghost mini" onclick="eliminaArchSelezionati()">🗑️ Elimina selezionati</button>'
+      +'<button class="btn-ghost mini" onclick="deselezionaArch()">Deseleziona tutto</button></div>';
+    const allChecked=archVisibleIds.length>0 && archVisibleIds.every(id=>archSel.has(id));
     const arrow=k=> archSort.key===k ? '<span class="ar">'+(archSort.dir>0?'▲':'▼')+'</span>' : '';
-    const thead='<tr>'+ARCH_COLS.map(c=>'<th onclick="ordinaArchivio(\''+c.k+'\')">'+c.l+arrow(c.k)+'</th>').join('')+'<th style="cursor:default">Azioni</th></tr>';
+    const thead='<tr><th class="selcell" style="cursor:default"><input type="checkbox" id="archSelAll" onclick="toggleArchSelAll(this)" '+(allChecked?'checked':'')+'></th>'+ARCH_COLS.map(c=>'<th onclick="ordinaArchivio(\''+c.k+'\')">'+c.l+arrow(c.k)+'</th>').join('')+'<th style="cursor:default">Azioni</th></tr>';
     const fmt=(c,k)=> (k==='data_nascita'||k==='data_macellazione')?fdIso(c[k]) : (k==='_cliente'?clienteName(c.cliente_id):c[k]);
     const rows=list.map(c=>{ const i=archivioCache.indexOf(c);
       const tds=ARCH_COLS.map(col=>{ let attr=''; if(ARCH_MONO.has(col.k)) attr=' class="mono"'; if(col.k==='marca_auricolare') attr=' class="mono" style="font-weight:600"';
         return '<td'+attr+'>'+esc(fmt(c,col.k))+'</td>'; }).join('');
-      return '<tr>'+tds+'<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
+      return '<tr><td class="selcell"><input type="checkbox" onclick="toggleArchSel(\''+c.id+'\',this)" '+(archSel.has(c.id)?'checked':'')+'></td>'+tds+'<td><div class="actcell"><button class="btn-primary mini" onclick="etichettaArchivio('+i+')">Etichetta</button><button class="btn-ghost mini" onclick="eliminaCapo(\''+c.id+'\')">Elimina</button></div></td></tr>';
     }).join('');
-    box.innerHTML='<div class="dt-topscroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+    box.innerHTML=bulk+'<div class="dt-topscroll"><div class="dt-topscroll-inner"></div></div><div class="dt-wrap"><table class="dt"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
     const ts=box.querySelector('.dt-topscroll'), tsi=box.querySelector('.dt-topscroll-inner'), wrap=box.querySelector('.dt-wrap'), tbl=wrap.querySelector('table');
     const syncTop=()=>{ tsi.style.width=tbl.scrollWidth+'px'; };
     syncTop(); requestAnimationFrame(syncTop); setTimeout(syncTop,200);
     let lock=false;
     ts.addEventListener('scroll',()=>{ if(lock) return; lock=true; wrap.scrollLeft=ts.scrollLeft; lock=false; });
     wrap.addEventListener('scroll',()=>{ if(lock) return; lock=true; ts.scrollLeft=wrap.scrollLeft; lock=false; });
+  }
+  function aggiornaArchBulk(){
+    const bar=$('archBulk'); if(bar) bar.style.display=archSel.size?'flex':'none';
+    const c=$('archSelCnt'); if(c) c.textContent=archSel.size+' selezionati';
+    const all=$('archSelAll'); if(all) all.checked = archVisibleIds.length>0 && archVisibleIds.every(id=>archSel.has(id));
+  }
+  function toggleArchSel(id,cb){ if(cb.checked) archSel.add(id); else archSel.delete(id); aggiornaArchBulk(); }
+  function toggleArchSelAll(cb){ if(cb.checked) archVisibleIds.forEach(id=>archSel.add(id)); else archVisibleIds.forEach(id=>archSel.delete(id)); renderArchivio(); }
+  function deselezionaArch(){ archSel.clear(); renderArchivio(); }
+  function stampaArchSelezionati(){
+    const sel=archivioCache.filter(c=>archSel.has(c.id));
+    if(!sel.length){ alert('Seleziona almeno un capo.'); return; }
+    const items=[];
+    sel.forEach(c=>{ fillFormFromCapo(c); if(costruisciQR()===null) return; const cv=makeLabelCanvas(); if(!cv) return;
+      items.push({ titolo:(c.marca_auricolare||'Capo'), file:nomeFile(), url:cv.toDataURL('image/png') }); });
+    if(!items.length){ alert('Impossibile generare le etichette dei capi selezionati.'); return; }
+    apriEsportazioneMulti(items);
+  }
+  async function eliminaArchSelezionati(){
+    const ids=[...archSel]; if(!ids.length){ alert('Seleziona almeno un capo.'); return; }
+    if(!confirm('Eliminare definitivamente '+ids.length+' capi dall\'archivio? L\'operazione non è reversibile.')) return;
+    if(!sb) return;
+    try{ const {error}=await sb.from('capi').delete().in('id',ids); if(error) throw error; archSel.clear(); caricaArchivio(); }
+    catch(e){ alert('Errore: '+(e.message||e)); }
   }
   async function eliminaCapo(id){
     if(!confirm('Eliminare questo capo dall\'archivio?')) return; if(!sb) return;
