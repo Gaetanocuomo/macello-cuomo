@@ -2598,11 +2598,11 @@ var qrcode = function() {
 
   @page{ size:A4 portrait; margin:5cm 0.6cm 0.6cm 0.6cm }
   @media print{
-    html,body{background:#fff;padding:0;margin:0}
+    html,body{background:#fff!important;padding:0;margin:0}
     body::before{display:none}
     body>*:not(#printArea){display:none!important}
     #printArea{display:block!important;position:static;text-align:center}
-    #printArea img{width:19cm;height:auto;display:block;margin:0 auto}
+    #printArea img{width:19.5cm!important;height:auto!important;max-width:none!important;max-height:none!important;display:block;margin:0 auto}
     .label-card{box-shadow:none;margin:0 auto}
   }
   #printArea{display:none}
@@ -4122,7 +4122,7 @@ var qrcode = function() {
     const c=document.createElement('canvas'); c.width=W*SCALE; c.height=H*SCALE;
     const ctx=c.getContext('2d');
     ctx.scale(SCALE,SCALE);
-    ctx.fillStyle='#fbfaf6'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
 
     // intestazione attività
     if(hasCompany){
@@ -4137,7 +4137,7 @@ var qrcode = function() {
 
     // barra (bianca, testo nero, con linee di contorno)
     if(cfg.barra){
-      ctx.fillStyle='#fbfaf6'; ctx.fillRect(0,companyH,W,barH);
+      ctx.fillStyle='#ffffff'; ctx.fillRect(0,companyH,W,barH);
       ctx.strokeStyle='#1c1a17'; ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.moveTo(0,companyH+0.75); ctx.lineTo(W,companyH+0.75); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0,companyH+barH-0.75); ctx.lineTo(W,companyH+barH-0.75); ctx.stroke();
