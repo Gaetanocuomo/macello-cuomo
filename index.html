@@ -3382,21 +3382,24 @@ var qrcode = function() {
   }
   function setupDragScroll(wrap){
     if(!wrap || wrap._dragReady) return; wrap._dragReady=true;
-    let down=false, startX=0, startL=0;
+    let down=false, startX=0, startL=0, moved=false;
     wrap.addEventListener('pointerdown', e=>{
+      if(e.button!==0) return;
       if(e.target.closest('input,button,a,select,label')) return;
-      down=true; startX=e.clientX; startL=wrap.scrollLeft; wrap.classList.add('grabbing');
-      e.preventDefault();
+      down=true; moved=false; startX=e.clientX; startL=wrap.scrollLeft; wrap.classList.add('grabbing');
       try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
+      e.preventDefault();
     });
     wrap.addEventListener('pointermove', e=>{
-      if(!down) return; e.preventDefault();
-      wrap.scrollLeft = startL - (e.clientX - startX);
+      if(!down) return;
+      const dx = e.clientX - startX;
+      if(Math.abs(dx)>2) moved=true;
+      wrap.scrollLeft = startL - dx;
+      e.preventDefault();
     });
-    const stop=()=>{ down=false; wrap.classList.remove('grabbing'); };
+    const stop=e=>{ down=false; wrap.classList.remove('grabbing'); try{ wrap.releasePointerCapture(e.pointerId); }catch(_){} };
     wrap.addEventListener('pointerup', stop);
     wrap.addEventListener('pointercancel', stop);
-    wrap.addEventListener('pointerleave', stop);
     wrap.addEventListener('wheel', e=>{
       const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if(d===0) return;
