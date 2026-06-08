@@ -2628,7 +2628,7 @@ var qrcode = function() {
       <button class="navitem" id="tab-stampa" onclick="vista('stampa')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-5a2 2 0 012-2h14a2 2 0 012 2v5a1 1 0 01-1 1h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg><span>Modello stampa</span></button>
     </nav>
-    <div class="side-foot"><span class="ok-dot"></span> Sistema online · cloud<br><small style="opacity:.7">Versione 2026-06-08 b</small></div>
+    <div class="side-foot"><span class="ok-dot"></span> Sistema online · cloud<br><small style="opacity:.7">Versione 2026-06-08 d</small></div>
   </aside>
 
   <main class="main">
@@ -3015,8 +3015,6 @@ var qrcode = function() {
           <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center">📂 Carica PDF (uno o più)
             <input type="file" id="lottoInput" accept="application/pdf,.pdf" multiple style="display:none" onchange="caricaPdfMulti(event)">
           </label>
-          <button class="btn-ghost" onclick="selezTutti(true)">Seleziona tutti</button>
-          <button class="btn-ghost" onclick="selezTutti(false)">Deseleziona tutti</button>
         </div>
         <div class="banner" id="lottoBanner" style="display:none"></div>
         <datalist id="clientiDatalist"></datalist>
@@ -3823,7 +3821,11 @@ var qrcode = function() {
       };
     });
     try{ const {error}=await sb.from('capi').insert(recs); if(error) throw error;
-      lottoBanner('✓ '+recs.length+' capi salvati nell\'archivio. Li trovi nella tabella qui sotto.');
+      lottoBanner('✓ '+recs.length+' capi salvati nell\'archivio. Li trovi nella tabella qui sotto. Per modificarli usa la matita ✏️ nell\'archivio.');
+      // tolgo dalle schede in alto i capi appena salvati (restano solo quelli non selezionati)
+      batch = batch.filter(e=>!e._sel);
+      renderBatch();
+      aggiornaConteggio();
       caricaArchivio();
     }catch(err){ lottoBanner('Errore nel salvataggio: '+esc(err.message||err), true); }
   }
