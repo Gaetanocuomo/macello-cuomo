@@ -2451,6 +2451,19 @@ var qrcode = function() {
   .btn-ghost{background:#fffdfa;color:var(--ink);border-color:var(--line-strong)}
   .btn-ghost:hover{background:var(--ink);color:var(--paper-2);border-color:var(--ink)}
 
+  /* Pulsante di caricamento PDF (etichetta) */
+  .btn-upload{display:inline-flex;align-items:center;gap:11px;cursor:pointer;
+    font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:.01em;
+    padding:14px 26px;border-radius:11px;border:1.5px solid var(--oxblood-dk);
+    background:linear-gradient(135deg,#8a3038,var(--oxblood-dk));color:#fdf3ee;
+    box-shadow:0 9px 20px -9px rgba(125,42,49,.6), inset 0 1px 0 rgba(255,255,255,.12);
+    transition:transform .16s, box-shadow .16s, filter .16s}
+  .btn-upload:hover{transform:translateY(-2px);filter:brightness(1.06);
+    box-shadow:0 16px 28px -9px rgba(125,42,49,.7), inset 0 1px 0 rgba(255,255,255,.15)}
+  .btn-upload:active{transform:translateY(0);box-shadow:0 6px 14px -8px rgba(125,42,49,.6)}
+  .btn-upload .ico{font-size:18px;line-height:1}
+  .btn-upload .sub{font-weight:500;opacity:.78;font-size:13px}
+
   /* ---- Anteprima QR ---- */
   .qr-stage{display:flex;flex-direction:column;align-items:center}
   .label-card{background:#fff;border:1px solid var(--line-strong);border-radius:11px;width:100%;max-width:340px;box-shadow:var(--shadow);overflow:hidden}
@@ -2628,7 +2641,7 @@ var qrcode = function() {
       <button class="navitem" id="tab-stampa" onclick="vista('stampa')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-5a2 2 0 012-2h14a2 2 0 012 2v5a1 1 0 01-1 1h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg><span>Modello stampa</span></button>
     </nav>
-    <div class="side-foot"><span class="ok-dot"></span> Sistema online · cloud<br><small style="opacity:.7">Versione 2026-06-08 d</small></div>
+    <div class="side-foot"><span class="ok-dot"></span> Sistema online · cloud<br><small style="opacity:.7">Versione 2026-06-08 e</small></div>
   </aside>
 
   <main class="main">
@@ -3012,7 +3025,7 @@ var qrcode = function() {
       <div class="panel-b">
         <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px">Carica uno o più PDF MOD 4: l'app estrae tutti i capi in una lista. Correggi e completa i dati mancanti (data macellazione, peso, lotto, cliente…), seleziona quelli da stampare e scaricali tutti insieme come immagini (ZIP) o come unico PDF.</p>
         <div class="actions" style="flex-wrap:wrap;gap:10px">
-          <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center">📂 Carica PDF (uno o più)
+          <label class="btn-upload"><span class="ico">📂</span> Carica PDF <span class="sub">(uno o più)</span>
             <input type="file" id="lottoInput" accept="application/pdf,.pdf" multiple style="display:none" onchange="caricaPdfMulti(event)">
           </label>
         </div>
