@@ -2628,7 +2628,7 @@ var qrcode = function() {
       <button class="navitem" id="tab-stampa" onclick="vista('stampa')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-5a2 2 0 012-2h14a2 2 0 012 2v5a1 1 0 01-1 1h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg><span>Modello stampa</span></button>
     </nav>
-    <div class="side-foot"><span class="ok-dot"></span> Sistema online · cloud</div>
+    <div class="side-foot"><span class="ok-dot"></span> Sistema online · cloud<br><small style="opacity:.7">Versione 2026-06-08 b</small></div>
   </aside>
 
   <main class="main">
@@ -3647,14 +3647,19 @@ var qrcode = function() {
     dc.sanita=san.join(' · ');
     dc.trattamenti=/\[X\]\s*NON SONO STATI trattati/i.test(txt)?'Nessun trattamento con sostanze vietate (autodichiarazione ICA)':'';
     const out=[];
-    const reCapo=/\b([A-Z]{2}\d{6,15})\s+((?:BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*)\s+(\d{2}\/\d{2}\/\d{2,4})\s+([MF])\b\s+(\S+)/g;
+    // La specie si legge dal TITOLO del documento, perche' pdf.js stacca la parola
+    // (es. "BOVINI") su un'altra riga rispetto al codice del capo.
+    const _ms = txt.match(/ELENCO CAPI\s+([A-Z]+)\s+MOVIMENTATI/i);
+    const _sk = _ms ? Object.keys(specieMap).find(k=>_ms[1].toUpperCase().startsWith(k)) : null;
+    const specieDoc = _sk ? specieMap[_sk] : 'Bovino';
+    // Regex capi: la specie tra codice e data e' OPZIONALE (vedi sopra).
+    const reCapo=/\b([A-Z]{2}\d{6,15})\s+(?:(?:BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*\s+)?(\d{2}\/\d{2}\/\d{2,4})\s+([MF])\b\s+([A-Z]{2,5})\b/g;
     let m;
     while((m=reCapo.exec(txt))!==null){
-      const cod=m[1], specieRaw=m[2], dn=m[3], sx=m[4], razza=m[5];
-      const sKey=Object.keys(specieMap).find(k=>specieRaw.startsWith(k));
+      const cod=m[1], dn=m[2], sx=m[3], razza=m[4];
       out.push({
         marca_auricolare: cod.replace(/^([A-Z]{2})/,'$1 '), codice_elettronico:'',
-        specie: sKey?specieMap[sKey]:'', razza, sesso: sx==='F'?'Femmina':'Maschio',
+        specie: specieDoc, razza, sesso: sx==='F'?'Femmina':'Maschio',
         data_nascita: expandDate(dn), paese_nascita: paeseDaCodice(cod),
         allevamento: [dc.propriet, dc.comune].filter(Boolean).join(' — '), codice_stalla: dc.stalla,
         asl: dc.asl, stato_sanitario: dc.sanita, doc_accompagnamento: dc.doc, macello: dc.macello,
@@ -3891,10 +3896,13 @@ var qrcode = function() {
 
     // --- capi (allegato) ---
     capiTrovati=[];
-    const reCapo=/\b([A-Z]{2}\d{6,15})\s+((?:BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*)\s+(\d{2}\/\d{2}\/\d{2,4})\s+([MF])\b\s+(\S+)/g;
+    // Specie dal TITOLO (pdf.js la stacca su altra riga). Conservo la parola grezza:
+    // selezionaCapo() la rimappa con specieMap piu' sotto.
+    const specieRawDoc = (txt.match(/ELENCO CAPI\s+([A-Z]+)\s+MOVIMENTATI/i)||[])[1] || 'BOVINI';
+    const reCapo=/\b([A-Z]{2}\d{6,15})\s+(?:(?:BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*\s+)?(\d{2}\/\d{2}\/\d{2,4})\s+([MF])\b\s+([A-Z]{2,5})\b/g;
     let m;
     while((m=reCapo.exec(txt))!==null){
-      capiTrovati.push({ cod:m[1], specie:m[2], nascita:m[3], sesso:m[4], razza:m[5], elettr:'' });
+      capiTrovati.push({ cod:m[1], specie:specieRawDoc, nascita:m[2], sesso:m[3], razza:m[4], elettr:'' });
     }
 
     if(capiTrovati.length===0){ banner('Nessun capo riconosciuto nell\'allegato. Compila a mano i campi.', true); return; }
