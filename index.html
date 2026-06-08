@@ -3646,26 +3646,21 @@ var qrcode = function() {
     });
     dc.sanita=san.join(' · ');
     dc.trattamenti=/\[X\]\s*NON SONO STATI trattati/i.test(txt)?'Nessun trattamento con sostanze vietate (autodichiarazione ICA)':'';
-    const out=[]; const re=/\bIT\d{12,}\b/g; let m; const pos=[];
-    while((m=re.exec(txt))!==null) pos.push(m.index);
-    pos.forEach((p,i)=>{
-      const sl=txt.slice(p, i+1<pos.length?pos[i+1]:p+260);
-      const cod=sl.match(/IT\d{12,}/)[0];
-      const specieRaw=(sl.match(/(BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*/)||[''])[0];
-      const dates=sl.match(/\d{2}\/\d{2}\/\d{2,4}/g)||[];
-      const sx=sl.slice(15).match(/\b([MF])\b/);
-      let razza=''; if(sx){ const after=sl.slice(15).slice(sx.index+1).trim(); razza=(after.match(/^\s*(\S+)/)||['',''])[1]; }
-      const el=(sl.match(/\b\d{16}\b/)||[''])[0];
+    const out=[];
+    const reCapo=/\b([A-Z]{2}\d{6,15})\s+((?:BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*)\s+(\d{2}\/\d{2}\/\d{2,4})\s+([MF])\b\s+(\S+)/g;
+    let m;
+    while((m=reCapo.exec(txt))!==null){
+      const cod=m[1], specieRaw=m[2], dn=m[3], sx=m[4], razza=m[5];
       const sKey=Object.keys(specieMap).find(k=>specieRaw.startsWith(k));
       out.push({
-        marca_auricolare: cod.replace(/^IT/,'IT '), codice_elettronico: el,
-        specie: sKey?specieMap[sKey]:'', razza, sesso: sx?(sx[1]==='F'?'Femmina':'Maschio'):'',
-        data_nascita: expandDate(dates[0]||''), paese_nascita: cod.startsWith('IT')?'Italia':'',
+        marca_auricolare: cod.replace(/^([A-Z]{2})/,'$1 '), codice_elettronico:'',
+        specie: sKey?specieMap[sKey]:'', razza, sesso: sx==='F'?'Femmina':'Maschio',
+        data_nascita: expandDate(dn), paese_nascita: paeseDaCodice(cod),
         allevamento: [dc.propriet, dc.comune].filter(Boolean).join(' — '), codice_stalla: dc.stalla,
         asl: dc.asl, stato_sanitario: dc.sanita, doc_accompagnamento: dc.doc, macello: dc.macello,
         note: dc.trattamenti, data_macellazione:'', peso:'', lotto:'', cliente_id:''
       });
-    });
+    }
     return out;
   }
   async function pdfToCapi(file){
@@ -3896,19 +3891,11 @@ var qrcode = function() {
 
     // --- capi (allegato) ---
     capiTrovati=[];
-    const re=/\bIT\d{12,}\b/g; let m; const pos=[];
-    while((m=re.exec(txt))!==null) pos.push(m.index);
-    pos.forEach((p,i)=>{
-      const sl = txt.slice(p, i+1<pos.length?pos[i+1]:p+260);
-      const cod = sl.match(/IT\d{12,}/)[0];
-      const specie=(sl.match(/(BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*/)||[''])[0];
-      const dates=sl.match(/\d{2}\/\d{2}\/\d{2,4}/g)||[];
-      const sx=sl.slice(15).match(/\b([MF])\b/);
-      let razza='';
-      if(sx){ const after=sl.slice(15).slice(sx.index+1).trim(); razza=(after.match(/^\s*(\S+)/)||['',''])[1]; }
-      const el=(sl.match(/\b\d{16}\b/)||[''])[0];
-      capiTrovati.push({ cod, specie, nascita:dates[0]||'', sesso:sx?sx[1]:'', razza, elettr:el });
-    });
+    const reCapo=/\b([A-Z]{2}\d{6,15})\s+((?:BOVIN|BUFALIN|SUIN|OVIN|CAPRIN|EQUIN)\w*)\s+(\d{2}\/\d{2}\/\d{2,4})\s+([MF])\b\s+(\S+)/g;
+    let m;
+    while((m=reCapo.exec(txt))!==null){
+      capiTrovati.push({ cod:m[1], specie:m[2], nascita:m[3], sesso:m[4], razza:m[5], elettr:'' });
+    }
 
     if(capiTrovati.length===0){ banner('Nessun capo riconosciuto nell\'allegato. Compila a mano i campi.', true); return; }
 
@@ -3933,6 +3920,7 @@ var qrcode = function() {
 
   function set(id,val){ const el=$(id); el.value=val||''; if(val){el.classList.add('filled'); const b=document.querySelector(`.auto[data-for="${id}"]`); if(b)b.classList.add('show');} }
   const specieMap={BOVIN:'Bovino',BUFALIN:'Bufalino',SUIN:'Suino',OVIN:'Ovino',CAPRIN:'Caprino',EQUIN:'Equino'};
+  function paeseDaCodice(c){ const p=(c||'').slice(0,2).toUpperCase(); const m={IT:'Italia',SI:'Slovenia',SK:'Slovacchia',FR:'Francia',DE:'Germania',ES:'Spagna',NL:'Paesi Bassi',PL:'Polonia',RO:'Romania',AT:'Austria',HU:'Ungheria',CZ:'Rep. Ceca',IE:'Irlanda',BE:'Belgio',DK:'Danimarca',HR:'Croazia',PT:'Portogallo',CH:'Svizzera'}; return m[p]||''; }
 
   function salvaManuali(i){ if(manualByCapo[i]) manualByCapo[i]={datamac:$('f_datamac').value,peso:$('f_peso').value,lotto:$('f_lotto').value}; }
   function caricaManuali(i){ const m=manualByCapo[i]||{datamac:'',peso:'',lotto:''}; $('f_datamac').value=m.datamac||''; $('f_peso').value=m.peso||''; $('f_lotto').value=m.lotto||''; }
@@ -3945,14 +3933,14 @@ var qrcode = function() {
     document.querySelectorAll('.filled').forEach(el=>el.classList.remove('filled'));
     document.querySelectorAll('.auto.show').forEach(b=>b.classList.remove('show'));
 
-    set('f_id', c.cod.replace(/^IT/,'IT '));
+    set('f_id', c.cod.replace(/^([A-Z]{2})/,'$1 '));
     const sKey=Object.keys(specieMap).find(k=>c.specie.startsWith(k));
     set('f_specie', sKey?specieMap[sKey]:'');
     set('f_razza', c.razza);
     set('f_sesso', c.sesso==='F'?'Femmina':c.sesso==='M'?'Maschio':'');
     set('f_elettr', c.elettr);
     set('f_nascita', expandDate(c.nascita));
-    set('f_paesenascita', c.cod.startsWith('IT')?'Italia':'');
+    set('f_paesenascita', paeseDaCodice(c.cod));
 
     set('f_allev', [datiComuni.propriet, datiComuni.comune].filter(Boolean).join(' — '));
     set('f_codstalla', datiComuni.stalla);
@@ -4093,10 +4081,11 @@ var qrcode = function() {
     if(!s){ s=document.createElement('style'); s.id='etlPage'; document.head.appendChild(s); }
     s.textContent='@page{ size:'+W+'mm '+H+'mm; margin:'+Mg+'mm } '
       +'@media print{ '
+      +'  html,body{margin:0!important;padding:0!important} '
       +'  body>*:not(#printArea){display:none!important} '
-      +'  #printArea{position:fixed!important;inset:0!important;display:flex!important;align-items:center;justify-content:center;margin:0!important;padding:0!important} '
-      +'  #printArea div{width:100%!important;height:100%!important;display:flex!important;align-items:center;justify-content:center} '
-      +'  #printArea img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;margin:0!important} '
+      +'  #printArea{display:flex!important;align-items:center;justify-content:center;width:'+iw+'mm!important;height:'+ih+'mm!important;margin:0!important;padding:0!important;overflow:hidden} '
+      +'  #printArea div{width:100%!important;height:100%!important;display:flex!important;align-items:center;justify-content:center;margin:0!important} '
+      +'  #printArea img{display:block;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;margin:0!important} '
       +'}';
     const cleanup=()=>{ const e=document.getElementById('etlPage'); if(e) e.remove(); window.removeEventListener('afterprint',cleanup); };
     window.addEventListener('afterprint',cleanup);
